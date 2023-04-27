@@ -12,11 +12,93 @@ using System.Threading.Channels;
 using System.Xml;
 using System.Xml.Serialization;
 
+namespace Cursor
+{
+    class Cursor
+    {
+        static public char symbol = '■';
+        static public int offset_x = 10;
+        static public int offset_y = 5;
+        static public int dif = 2;
+        static public void Move(int limit)
+        {
+            char key = Console.ReadKey(true).KeyChar;
+            int change_pos = 0;
+            switch (key)
+            {
+                case 'w':
+                case 'W':
+                    change_pos = -1;
+                    break;
+                case 's':
+                case 'S':
+                    change_pos = 1;
+                    break;
+            }
+            int current_pos = Console.GetCursorPosition().Top - offset_y;
+            if (current_pos + change_pos > limit || current_pos  + change_pos < 0) return;
+            current_pos += change_pos;
+            Hide();
+            Console.SetCursorPosition(offset_x, offset_y + current_pos);
+            Show();
+        }
+        static public void Hide()
+        {
+            (int x, int y) = Console.GetCursorPosition();
+            Console.Write(' ');
+            Console.SetCursorPosition(x, y);
+        }
+        static public void Show()
+        {
+            (int x, int y) = Console.GetCursorPosition();
+            Console.Write(symbol);
+            Console.SetCursorPosition(x, y);
+        }
+    }
+}
+
 namespace Quiz
 {
     enum Lesson
     {
         Math, Biology, Geography, IT, Physics, History
+    }
+    class Quiz
+    {
+        private int cursor_pos;
+        private Data data;
+        static private void Show(string[] msg)
+        {
+            Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, Cursor.Cursor.offset_y);
+            int current = Console.GetCursorPosition().Top;
+            foreach(string s in msg)
+            {
+                Console.WriteLine(s);
+                current++;
+                Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, current);
+            }
+            Console.SetCursorPosition(Cursor.Cursor.offset_x, Cursor.Cursor.offset_y);
+            Cursor.Cursor.Show();
+        }
+        public Quiz()
+        {
+            cursor_pos = 0;
+            data = new Data();
+        }
+        public void Menu()
+        {
+            string[] msg = {
+                "Login",
+                "Register",
+                "Exit"
+            };
+            int limit = msg.Length-1;
+            Show(msg);
+            while (true)
+            {
+                Cursor.Cursor.Move(limit);
+            }
+        }
     }
     class User
     {

@@ -93,6 +93,30 @@ namespace Quiz
             cursor_pos = 0;
             data = new Data();
         }
+        private bool Procced(Menus m)
+        {
+            switch (m)
+            {
+                case Menus.Log_in:
+                    loginPage();
+                    break;
+                case Menus.Register:
+                    registerPage();
+                    break;
+                case Menus.login:
+
+                    break;
+                case Menus.password:
+
+                    break;
+                case Menus.Date_Of_Birth:
+
+                    break;
+                case Menus.Exit:
+                    return false;
+            }
+            return true;
+        }
         public void Menu()
         {
             Console.Clear();
@@ -107,19 +131,9 @@ namespace Quiz
             do
             {
                 move = Cursor.Cursor.Move(limit);
-                switch (move)
-                {
-                    case 0:
-                        loginPage();
-                        break;
-                    case 1:
-                        registerPage();
-                        break;
-                    case 2:
-                        return;
-                }
                 if (move != -1)
                 {
+                    if (Procced(msg[move]) == false) return;
                     Console.Clear();
                     Show(msg);
                 }
@@ -142,19 +156,9 @@ namespace Quiz
             do
             {
                 move = Cursor.Cursor.Move(limit);
-                switch (move)
-                {
-                    case 0:
-                        
-                        break;
-                    case 1:
-
-                        break;
-                    case 2:
-                        return;
-                }
                 if (move != -1)
                 {
+                    if (Procced(msg[move]) == false) return;
                     Console.Clear();
                     Show(msg);
                 }
@@ -177,22 +181,9 @@ namespace Quiz
             do
             {
                 move = Cursor.Cursor.Move(limit);
-                switch (move)
-                {
-                    case 0:
-
-                        break;
-                    case 1:
-
-                        break;
-                    case 2:
-
-                        break;
-                    case 3:
-                        return;
-                }
                 if (move != -1)
                 {
+                    if (Procced(msg[move]) == false) return;
                     Console.Clear();
                     Show(msg);
                 }

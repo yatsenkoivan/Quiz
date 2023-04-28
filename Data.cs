@@ -75,10 +75,9 @@ namespace Quiz
     {
         static private int tab_size = 20;
         static private int error_level = 4;
-        static private string[] MenusTitle = { "Exit", "Log in", "Register", "Password: ", "Login: ", "Date of birth: " };
         private Data data;
         private User? current_user;
-        public User UserInfo
+        public User? UserInfo
         {
             get { return current_user; }
         }
@@ -399,6 +398,8 @@ namespace Quiz
         }
         public Data()
         {
+            users = Array.Empty<User>();
+
             if (File.Exists("users.bin") == false)
             {
                 return;
@@ -410,7 +411,6 @@ namespace Quiz
             FileStream fs = File.OpenRead("users.bin");
             BinaryReader br = new(fs, Encoding.Unicode);
 
-            users = Array.Empty<User>();
 
             string login;
             string password;

@@ -73,19 +73,27 @@ namespace Quiz
     }
     class Quiz
     {
+        static private string tab = "\t\t";
         static private string[] MenusTitle = { "Exit", "Log in", "Register", "Password: ", "Login: ", "Date of birth: " };
         private int cursor_pos;
         private Data data;
-        static private void Show(string title, string[] msg)
+        static private void Show(string title, string[] msg, object[]? values = null)
         {
             Console.SetCursorPosition(Cursor.Cursor.offset_x - 2, Cursor.Cursor.offset_y - 2);
             Console.WriteLine(title);
             Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, Cursor.Cursor.offset_y);
             int current = Console.GetCursorPosition().Top;
+
+            int index = 0;
             foreach(string m in msg)
             {
-                Console.WriteLine(m);
+                Console.Write(m);
                 current++;
+                if (values != null && index < values.Length)
+                {
+                    Console.WriteLine("{0}{1}",tab,values[index]);
+                    index++;
+                }
                 Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, current);
             }
             Console.SetCursorPosition(Cursor.Cursor.offset_x, Cursor.Cursor.offset_y);
@@ -138,11 +146,13 @@ namespace Quiz
                 "Password: ",
                 "Back"
             };
+            object[] values = new object[2];
+            values[0] = "";
+            values[1] = "";
             string title = "Login";
-            Show(title, msg);
 
-            string login="";
-            string register="";
+            Show(title, msg, values);
+
             int limit = msg.Length - 1;
             int move;
             do
@@ -153,16 +163,16 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            //enterLogin();
+                            enterValue(out values[0]);
                             break;
                         case 1:
-                            //enterPassword();
+                            enterValue(out values[1]);
                             break;
                         case 2:
                             return;
                     }
                     Console.Clear();
-                    Show(title, msg);
+                    Show(title, msg, values);
                 }
             } while (move != msg.Length - 1);
         }
@@ -189,7 +199,7 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            //enterLogin();
+                            //enterValue(out login);
                             break;
                         case 1:
                             //enterPassword();
@@ -204,6 +214,12 @@ namespace Quiz
                     Show(title,msg);
                 }
             } while (move != msg.Length-1);
+        }
+        public void enterValue(out object value)
+        {
+            int current = Console.GetCursorPosition().Left;
+            Console.SetCursorPosition(current + tab.Length*8, Console.GetCursorPosition().Top);
+            value = Console.ReadLine() ?? "";
         }
     }
     class User

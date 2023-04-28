@@ -6,7 +6,7 @@ class Start
     {
         Console.OutputEncoding = System.Text.Encoding.Unicode;
         Console.Title = "Quiz";
-        Console.CursorVisible = false;
+        //Console.CursorVisible = false;
         Quiz.Quiz q = new();
         q.Menu();
     }

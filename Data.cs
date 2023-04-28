@@ -76,9 +76,8 @@ namespace Quiz
         static private int tab_size = 20;
         static private int error_level = 4;
         static private string[] MenusTitle = { "Exit", "Log in", "Register", "Password: ", "Login: ", "Date of birth: " };
-        private int cursor_pos;
         private Data data;
-        private User current_user;
+        private User? current_user;
         public User UserInfo
         {
             get { return current_user; }
@@ -108,7 +107,6 @@ namespace Quiz
         }
         public Quiz()
         {
-            cursor_pos = 0;
             data = new Data();
         }
         public void Menu()
@@ -177,18 +175,28 @@ namespace Quiz
                             enterValue(out password);
                             break;
                         case 2:
+                            if (login == "")
+                            {
+                                Error("! Login cannot be empty !");
+                                Console.ReadKey(true);
+                                break;
+                            }
+                            if (password == "")
+                            {
+                                Error("! Password cannot be empty !");
+                                Console.ReadKey(true);
+                                break;
+                            }
                             int index = Array.FindIndex(data.Users, user => user.Login == login && user.Password == password);
                             if (index == -1)
                             {
-                                Error("! User not found !");
+                                Error("! Login or password is incorrect !");
                                 Console.ReadKey(true);
+                                break;
                             }
-                            else
-                            {
-                                current_user = data.Users[index];
-                                UserMenu();
-                            }
-                            break;
+                            current_user = data.Users[index];
+                            UserMenu();
+                            return;
                         case 3:
                             return;
                     }
@@ -239,6 +247,25 @@ namespace Quiz
                             enterValue(out yy,8);
                             break;
                         case 3:
+                            if (login == "")
+                            {
+                                Error("! Login cannot be empty !");
+                                Console.ReadKey(true);
+                                break;
+                            }
+                            if (password == "")
+                            {
+                                Error("! Password cannot be empty !");
+                                Console.ReadKey(true);
+                                break;
+                            }
+                            int index = Array.FindIndex(data.Users, user => user.Login == login);
+                            if (index != -1)
+                            {
+                                Console.WriteLine("! Login already taken !");
+                                Console.ReadKey(true);
+                                break;
+                            }
                             User user = new User(login, password, new DateOnly(yy,mm,dd));
                             data.AddUser(user);
                             return;
@@ -269,7 +296,42 @@ namespace Quiz
         }
         public void UserMenu()
         {
-            Console.WriteLine("User menu");
+            Console.Clear();
+            string[] msg = {
+                "Play Quiz",
+                "Statistic",
+                "Settings",
+                "Logout"
+            };
+            string title = "User Menu";
+            Show(title, msg);
+
+            int limit = msg.Length - 1;
+            int move;
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                if (move != -1)
+                {
+                    switch (move)
+                    {
+                        case 0:
+                            //quizesChooseMenu();
+                            break;
+                        case 1:
+                            //Stats();
+                            break;
+                        case 2:
+                            //Settings();
+                            break;
+                        case 3:
+                            current_user = null;
+                            return;
+                    }
+                    Console.Clear();
+                    Show(title, msg);
+                }
+            } while (move != msg.Length - 1);
         }
         public void Error(string msg)
         {

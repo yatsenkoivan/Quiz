@@ -320,12 +320,15 @@ namespace Quiz
             int yy=1, mm=1, dd=1;
             try
             {
-                login = br.ReadString();
-                password = br.ReadString();
-                //yy = br.ReadUInt16();
-                //mm = br.ReadUInt16();
-                //dd = br.ReadUInt16();
-                users = users.Append(new User(login, password, new DateOnly(yy, mm, dd))).ToArray();
+                while (fs.Position < fs.Length)
+                {
+                    login = br.ReadString();
+                    password = br.ReadString();
+                    yy = br.ReadInt32();
+                    mm = br.ReadInt32();
+                    dd = br.ReadInt32();
+                    users = users.Append(new User(login, password, new DateOnly(yy, mm, dd))).ToArray();
+                }
             }
             catch (Exception)
             {}
@@ -337,11 +340,13 @@ namespace Quiz
             FileStream fs = new FileStream("users.bin", FileMode.Append, FileAccess.Write);
             BinaryWriter bw = new(fs, Encoding.Unicode);
             bw.Write(user.Login);
-            bw.Write("\t");
+            //bw.Write("\n");
             bw.Write(user.Password);
-            bw.Write("\n");
+            //bw.Write("\n");
             DateOnly dob = user.BirthDate;
-            bw.Write($"{dob.Year} {dob.Month} {dob.Day}\n");
+            bw.Write(dob.Year);
+            bw.Write(dob.Month);
+            bw.Write(dob.Day);
             fs.Close();
         }
     }

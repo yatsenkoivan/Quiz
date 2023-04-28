@@ -73,31 +73,32 @@ namespace Quiz
     }
     class Quiz
     {
-        static private string tab = "\t\t";
+        static private int tab_size = 20;
         static private string[] MenusTitle = { "Exit", "Log in", "Register", "Password: ", "Login: ", "Date of birth: " };
         private int cursor_pos;
         private Data data;
-        static private void Show(string title, string[] msg, object[]? values = null)
+        static private void Show(string title, string[] msg)
         {
             Console.SetCursorPosition(Cursor.Cursor.offset_x - 2, Cursor.Cursor.offset_y - 2);
             Console.WriteLine(title);
             Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, Cursor.Cursor.offset_y);
             int current = Console.GetCursorPosition().Top;
 
-            int index = 0;
             foreach(string m in msg)
             {
                 Console.Write(m);
                 current++;
-                if (values != null && index < values.Length)
-                {
-                    Console.WriteLine("{0}{1}",tab,values[index]);
-                    index++;
-                }
                 Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, current);
             }
             Console.SetCursorPosition(Cursor.Cursor.offset_x, Cursor.Cursor.offset_y);
             Cursor.Cursor.Show();
+        }
+        static private void ShowValue<T>(T value, int level)
+        {
+            (int x, int y) = Console.GetCursorPosition();
+            Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif + tab_size, Cursor.Cursor.offset_y + level);
+            Console.WriteLine(value);
+            Console.SetCursorPosition(x, y);
         }
         public Quiz()
         {
@@ -144,14 +145,15 @@ namespace Quiz
             string[] msg = {
                 "Login: ",
                 "Password: ",
+                "Submit",
                 "Back"
             };
-            object[] values = new object[2];
-            values[0] = "";
-            values[1] = "";
             string title = "Login";
 
-            Show(title, msg, values);
+            Show(title, msg);
+
+            string login = "";
+            string password = "";
 
             int limit = msg.Length - 1;
             int move;
@@ -163,16 +165,18 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            enterValue(out values[0]);
+                            enterValue(out login);
                             break;
                         case 1:
-                            enterValue(out values[1]);
+                            enterValue(out password);
                             break;
                         case 2:
                             return;
                     }
                     Console.Clear();
-                    Show(title, msg, values);
+                    Show(title, msg);
+                    ShowValue(login, 0);
+                    ShowValue(password, 1);
                 }
             } while (move != msg.Length - 1);
         }
@@ -183,14 +187,20 @@ namespace Quiz
                 "Login: ",
                 "Password: ",
                 "Date of birth: ",
+                "Submit",
                 "Back"
             };
             string title = "Register";
             Show(title,msg);
+
             string login = "";
             string password = "";
+            int yy = 1, mm = 1, dd = 1;
+
             int limit = msg.Length - 1;
             int move;
+
+            ShowValue($"{dd}.{mm}.{yy}", 2);
             do
             {
                 move = Cursor.Cursor.Move(limit);
@@ -199,29 +209,47 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            //enterValue(out login);
+                            enterValue(out login);
                             break;
                         case 1:
-                            //enterPassword();
+                            enterValue(out password);
                             break;
                         case 2:
-                            //enterDOB();
+                            enterValue(out dd);
+                            enterValue(out mm,4);
+                            enterValue(out yy,8);
                             break;
                         case 3:
+                            User user = new User(login, password, new DateOnly(yy,mm,dd));
+                            data.AddUser(user);
+                            return;
+                        case 4:
                             return;
                     }
                     Console.Clear();
                     Show(title,msg);
+                    ShowValue(login, 0);
+                    ShowValue(password, 1);
+                    ShowValue($"{dd}.{mm}.{yy}", 2);
                 }
             } while (move != msg.Length-1);
         }
-        public void enterValue(out object value)
+        public void enterValue(out string value, int offset=0)
         {
-            int current = Console.GetCursorPosition().Left;
-            Console.SetCursorPosition(current + tab.Length*8, Console.GetCursorPosition().Top);
+            (int x, int y) = Console.GetCursorPosition();
+            Console.SetCursorPosition(x + tab_size + offset, y);
             value = Console.ReadLine() ?? "";
+            Console.SetCursorPosition(x, y);
+        }
+        public void enterValue(out int value, int offset=0)
+        {
+            (int x, int y) = Console.GetCursorPosition();
+            Console.SetCursorPosition(x + tab_size + offset, y);
+            int.TryParse(Console.ReadLine(), out value);
+            Console.SetCursorPosition(x, y);
         }
     }
+    [Serializable]
     class User
     {
         private string login;
@@ -234,6 +262,10 @@ namespace Quiz
         public string Password
         {
             get { return password; }
+        }
+        public DateOnly BirthDate
+        {
+            get { return birthDate; }
         }
         public User(string login, string password, DateOnly birthDate)
         {
@@ -270,7 +302,47 @@ namespace Quiz
         private User[] users;
         public Data()
         {
-            
+            if (File.Exists("users.bin") == false)
+            {
+                return;
+            }
+            if (File.Exists("data.bin") == false)
+            {
+                return;
+            }
+            FileStream fs = File.OpenRead("users.bin");
+            BinaryReader br = new(fs, Encoding.Unicode);
+
+            users = Array.Empty<User>();
+
+            string login;
+            string password;
+            int yy=1, mm=1, dd=1;
+            try
+            {
+                login = br.ReadString();
+                password = br.ReadString();
+                //yy = br.ReadUInt16();
+                //mm = br.ReadUInt16();
+                //dd = br.ReadUInt16();
+                users = users.Append(new User(login, password, new DateOnly(yy, mm, dd))).ToArray();
+            }
+            catch (Exception)
+            {}
+            fs.Close();
+        }
+        public void AddUser(User user)
+        {
+            users = users.Append(user).ToArray();
+            FileStream fs = new FileStream("users.bin", FileMode.Append, FileAccess.Write);
+            BinaryWriter bw = new(fs, Encoding.Unicode);
+            bw.Write(user.Login);
+            bw.Write("\t");
+            bw.Write(user.Password);
+            bw.Write("\n");
+            DateOnly dob = user.BirthDate;
+            bw.Write($"{dob.Year} {dob.Month} {dob.Day}\n");
+            fs.Close();
         }
     }
 }

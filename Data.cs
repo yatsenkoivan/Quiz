@@ -69,17 +69,20 @@ namespace Quiz
     }
     enum Menus
     {
-        Exit, Log_in, Register, password, login, Date_Of_Birth
+        Exit=0, Log_in, Register, password, login, Date_Of_Birth, submitLogin, submitRegister
     }
     class Quiz
     {
+        static private string[] MenusTitle = { "Exit", "Log in", "Register", "Password: ", "Login: ", "Date of birth: " };
         private int cursor_pos;
         private Data data;
-        static private void Show(Menus[] msg)
+        static private void Show(string title, string[] msg)
         {
+            Console.SetCursorPosition(Cursor.Cursor.offset_x - 2, Cursor.Cursor.offset_y - 2);
+            Console.WriteLine(title);
             Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, Cursor.Cursor.offset_y);
             int current = Console.GetCursorPosition().Top;
-            foreach(Menus m in msg)
+            foreach(string m in msg)
             {
                 Console.WriteLine(m);
                 current++;
@@ -93,101 +96,114 @@ namespace Quiz
             cursor_pos = 0;
             data = new Data();
         }
-        private bool Procced(Menus m)
-        {
-            switch (m)
-            {
-                case Menus.Log_in:
-                    loginPage();
-                    break;
-                case Menus.Register:
-                    registerPage();
-                    break;
-                case Menus.login:
-
-                    break;
-                case Menus.password:
-
-                    break;
-                case Menus.Date_Of_Birth:
-
-                    break;
-                case Menus.Exit:
-                    return false;
-            }
-            return true;
-        }
         public void Menu()
         {
             Console.Clear();
-            Menus[] msg = {
-                Menus.Log_in,
-                Menus.Register,
-                Menus.Exit
+            string[] msg = {
+                "Log in",
+                "Register",
+                "Exit"
             };
+            string title = "Menu";
+            Show(title, msg);
+
             int limit = msg.Length-1;
-            Show(msg);
             int move;
             do
             {
                 move = Cursor.Cursor.Move(limit);
                 if (move != -1)
                 {
-                    if (Procced(msg[move]) == false) return;
+                    switch (move)
+                    {
+                        case 0:
+                            loginPage();
+                            break;
+                        case 1:
+                            registerPage();
+                            break;
+                        case 2:
+                            return;
+                    }
                     Console.Clear();
-                    Show(msg);
+                    Show(title, msg);
                 }
-            } while (move == -1 || msg[move] != Menus.Exit);
-            
+            } while (move != msg.Length - 1);
         }
         public void loginPage()
         {
             Console.Clear();
-            Menus[] msg = {
-                Menus.login,
-                Menus.password,
-                Menus.Exit
+            string[] msg = {
+                "Login: ",
+                "Password: ",
+                "Back"
             };
-            string login = "";
-            string password = "";
+            string title = "Login";
+            Show(title, msg);
+
+            string login="";
+            string register="";
             int limit = msg.Length - 1;
-            Show(msg);
             int move;
             do
             {
                 move = Cursor.Cursor.Move(limit);
                 if (move != -1)
                 {
-                    if (Procced(msg[move]) == false) return;
+                    switch (move)
+                    {
+                        case 0:
+                            //enterLogin();
+                            break;
+                        case 1:
+                            //enterPassword();
+                            break;
+                        case 2:
+                            return;
+                    }
                     Console.Clear();
-                    Show(msg);
+                    Show(title, msg);
                 }
-            } while (move == -1 || msg[move] != Menus.Exit);
+            } while (move != msg.Length - 1);
         }
         public void registerPage()
         {
             Console.Clear();
-            Menus[] msg = {
-                Menus.login,
-                Menus.password,
-                Menus.Date_Of_Birth,
-                Menus.Exit
+            string[] msg = {
+                "Login: ",
+                "Password: ",
+                "Date of birth: ",
+                "Back"
             };
+            string title = "Register";
+            Show(title,msg);
             string login = "";
             string password = "";
             int limit = msg.Length - 1;
-            Show(msg);
             int move;
             do
             {
                 move = Cursor.Cursor.Move(limit);
                 if (move != -1)
                 {
-                    if (Procced(msg[move]) == false) return;
+                    switch (move)
+                    {
+                        case 0:
+                            //enterLogin();
+                            break;
+                        case 1:
+                            //enterPassword();
+                            break;
+                        case 2:
+                            //enterDOB();
+                            break;
+                        case 3:
+                            return;
+                    }
                     Console.Clear();
-                    Show(msg);
+                    Show(title,msg);
                 }
-            } while (move == -1 || msg[move] != Menus.Exit);
+            } while (move != msg.Length-1);
         }
     }
     class User

@@ -20,10 +20,11 @@ namespace Cursor
         static public int offset_x = 10;
         static public int offset_y = 5;
         static public int dif = 2;
-        static public void Move(int limit)
+        static public int Move(int limit)
         {
             char key = Console.ReadKey(true).KeyChar;
             int change_pos = 0;
+            int current_pos = Console.GetCursorPosition().Top - offset_y;
             switch (key)
             {
                 case 'w':
@@ -34,13 +35,16 @@ namespace Cursor
                 case 'S':
                     change_pos = 1;
                     break;
+                case ' ':
+                case (char)ConsoleKey.Enter:
+                    return current_pos;
             }
-            int current_pos = Console.GetCursorPosition().Top - offset_y;
-            if (current_pos + change_pos > limit || current_pos  + change_pos < 0) return;
+            if (current_pos + change_pos > limit || current_pos  + change_pos < 0) return -1;
             current_pos += change_pos;
             Hide();
             Console.SetCursorPosition(offset_x, offset_y + current_pos);
             Show();
+            return -1;
         }
         static public void Hide()
         {
@@ -63,17 +67,21 @@ namespace Quiz
     {
         Math, Biology, Geography, IT, Physics, History
     }
+    enum Menus
+    {
+        Exit, Log_in, Register, password, login, Date_Of_Birth
+    }
     class Quiz
     {
         private int cursor_pos;
         private Data data;
-        static private void Show(string[] msg)
+        static private void Show(Menus[] msg)
         {
             Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, Cursor.Cursor.offset_y);
             int current = Console.GetCursorPosition().Top;
-            foreach(string s in msg)
+            foreach(Menus m in msg)
             {
-                Console.WriteLine(s);
+                Console.WriteLine(m);
                 current++;
                 Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, current);
             }
@@ -87,17 +95,108 @@ namespace Quiz
         }
         public void Menu()
         {
-            string[] msg = {
-                "Login",
-                "Register",
-                "Exit"
+            Console.Clear();
+            Menus[] msg = {
+                Menus.Log_in,
+                Menus.Register,
+                Menus.Exit
             };
             int limit = msg.Length-1;
             Show(msg);
-            while (true)
+            int move;
+            do
             {
-                Cursor.Cursor.Move(limit);
-            }
+                move = Cursor.Cursor.Move(limit);
+                switch (move)
+                {
+                    case 0:
+                        loginPage();
+                        break;
+                    case 1:
+                        registerPage();
+                        break;
+                    case 2:
+                        return;
+                }
+                if (move != -1)
+                {
+                    Console.Clear();
+                    Show(msg);
+                }
+            } while (move == -1 || msg[move] != Menus.Exit);
+            
+        }
+        public void loginPage()
+        {
+            Console.Clear();
+            Menus[] msg = {
+                Menus.login,
+                Menus.password,
+                Menus.Exit
+            };
+            string login = "";
+            string password = "";
+            int limit = msg.Length - 1;
+            Show(msg);
+            int move;
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                switch (move)
+                {
+                    case 0:
+                        
+                        break;
+                    case 1:
+
+                        break;
+                    case 2:
+                        return;
+                }
+                if (move != -1)
+                {
+                    Console.Clear();
+                    Show(msg);
+                }
+            } while (move == -1 || msg[move] != Menus.Exit);
+        }
+        public void registerPage()
+        {
+            Console.Clear();
+            Menus[] msg = {
+                Menus.login,
+                Menus.password,
+                Menus.Date_Of_Birth,
+                Menus.Exit
+            };
+            string login = "";
+            string password = "";
+            int limit = msg.Length - 1;
+            Show(msg);
+            int move;
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                switch (move)
+                {
+                    case 0:
+
+                        break;
+                    case 1:
+
+                        break;
+                    case 2:
+
+                        break;
+                    case 3:
+                        return;
+                }
+                if (move != -1)
+                {
+                    Console.Clear();
+                    Show(msg);
+                }
+            } while (move == -1 || msg[move] != Menus.Exit);
         }
     }
     class User

@@ -157,6 +157,7 @@ namespace Quiz
 
             string login = "";
             string password = "";
+            string hidden_pass = "";
 
             int limit = msg.Length - 1;
             int move;
@@ -171,7 +172,7 @@ namespace Quiz
                             enterValue(out login);
                             break;
                         case 1:
-                            enterValue(out password);
+                            hidden_pass = enterPassword(out password);
                             break;
                         case 2:
                             if (login == "")
@@ -202,7 +203,7 @@ namespace Quiz
                     Console.Clear();
                     Show(title, msg);
                     ShowValue(login, 0);
-                    ShowValue(password, 1);
+                    ShowValue(hidden_pass, 1);
                 }
             } while (move != msg.Length - 1);
         }
@@ -261,7 +262,7 @@ namespace Quiz
                             int index = Array.FindIndex(data.Users, user => user.Login == login);
                             if (index != -1)
                             {
-                                Console.WriteLine("! Login already taken !");
+                                Error("! Login already taken !");
                                 Console.ReadKey(true);
                                 break;
                             }
@@ -279,7 +280,7 @@ namespace Quiz
                 }
             } while (move != msg.Length-1);
         }
-        public void enterValue(out string value, int offset=0)
+        public void enterValue(out string value, int offset = 0)
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x + tab_size + offset, y);
@@ -292,6 +293,36 @@ namespace Quiz
             Console.SetCursorPosition(x + tab_size + offset, y);
             int.TryParse(Console.ReadLine(), out value);
             Console.SetCursorPosition(x, y);
+        }
+        public string enterPassword(out string pass, int offset=0)
+        {
+            (int x, int y) = Console.GetCursorPosition();
+            Console.SetCursorPosition(x + tab_size + offset, y);
+            pass = "";
+            string result = "";
+            char key;
+            key = Console.ReadKey(true).KeyChar;
+            do
+            {
+                if (key == (char)ConsoleKey.Backspace)
+                {
+                    pass = pass.Remove(pass.Length - 1);
+                    result = result.Remove(result.Length - 1);
+                    Console.SetCursorPosition(x + tab_size + offset - 1, y);
+                    Console.Write(' ');
+                    x--;
+                    Console.SetCursorPosition(x + tab_size + offset, y);
+                }
+                else
+                {
+                    pass += key;
+                    result += '*';
+                    Console.Write('*');
+                    x++;
+                }
+                key = Console.ReadKey(true).KeyChar;
+            } while (key != (char)ConsoleKey.Enter);
+            return result;
         }
         public void UserMenu()
         {

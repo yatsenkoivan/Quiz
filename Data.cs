@@ -74,9 +74,15 @@ namespace Quiz
     class Quiz
     {
         static private int tab_size = 20;
+        static private int error_level = 4;
         static private string[] MenusTitle = { "Exit", "Log in", "Register", "Password: ", "Login: ", "Date of birth: " };
         private int cursor_pos;
         private Data data;
+        private User current_user;
+        public User UserInfo
+        {
+            get { return current_user; }
+        }
         static private void Show(string title, string[] msg)
         {
             Console.SetCursorPosition(Cursor.Cursor.offset_x - 2, Cursor.Cursor.offset_y - 2);
@@ -171,6 +177,19 @@ namespace Quiz
                             enterValue(out password);
                             break;
                         case 2:
+                            int index = Array.FindIndex(data.Users, user => user.Login == login && user.Password == password);
+                            if (index == -1)
+                            {
+                                Error("! User not found !");
+                                Console.ReadKey(true);
+                            }
+                            else
+                            {
+                                current_user = data.Users[index];
+                                UserMenu();
+                            }
+                            break;
+                        case 3:
                             return;
                     }
                     Console.Clear();
@@ -248,6 +267,18 @@ namespace Quiz
             int.TryParse(Console.ReadLine(), out value);
             Console.SetCursorPosition(x, y);
         }
+        public void UserMenu()
+        {
+            Console.WriteLine("User menu");
+        }
+        public void Error(string msg)
+        {
+            (int x, int y) = Console.GetCursorPosition();
+            Console.SetCursorPosition(x, y + error_level);
+            Console.WriteLine(msg);
+            Console.SetCursorPosition(x, y);
+        }
+
     }
     [Serializable]
     class User
@@ -300,6 +331,10 @@ namespace Quiz
     class Data
     {
         private User[] users;
+        public User[] Users
+        {
+            get { return users; }
+        }
         public Data()
         {
             if (File.Exists("users.bin") == false)

@@ -110,6 +110,7 @@ namespace Quiz
         }
         public void Menu()
         {
+            Console.BackgroundColor = ConsoleColor.DarkGray;
             Console.Clear();
             string[] msg = {
                 "Log in",
@@ -137,6 +138,7 @@ namespace Quiz
                         case 2:
                             return;
                     }
+                    Console.BackgroundColor = ConsoleColor.DarkGray;
                     Console.Clear();
                     Show(title, msg);
                 }
@@ -239,7 +241,7 @@ namespace Quiz
                             enterValue(out login);
                             break;
                         case 1:
-                            enterValue(out password);
+                            enterPassword(out password, hide : false);
                             break;
                         case 2:
                             enterValue(out dd);
@@ -294,7 +296,7 @@ namespace Quiz
             int.TryParse(Console.ReadLine(), out value);
             Console.SetCursorPosition(x, y);
         }
-        public string enterPassword(out string pass, int offset=0)
+        public string enterPassword(out string pass, int offset=0, bool hide=true)
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x + tab_size + offset, y);
@@ -306,18 +308,19 @@ namespace Quiz
             {
                 if (key == (char)ConsoleKey.Backspace)
                 {
-                    pass = pass.Remove(pass.Length - 1);
-                    result = result.Remove(result.Length - 1);
+                    if (pass.Length > 0) pass = pass.Remove(pass.Length - 1);
+                    if (result.Length > 0) result = result.Remove(result.Length - 1);
                     Console.SetCursorPosition(x + tab_size + offset - 1, y);
                     Console.Write(' ');
                     x--;
                     Console.SetCursorPosition(x + tab_size + offset, y);
                 }
-                else
+                else if (Char.IsLetterOrDigit(key) || Char.IsSymbol(key))
                 {
                     pass += key;
                     result += '*';
-                    Console.Write('*');
+                    if (hide) Console.Write('*');
+                    else Console.Write(key);
                     x++;
                 }
                 key = Console.ReadKey(true).KeyChar;
@@ -326,6 +329,7 @@ namespace Quiz
         }
         public void UserMenu()
         {
+            Console.BackgroundColor = ConsoleColor.DarkBlue;
             Console.Clear();
             string[] msg = {
                 "Play Quiz",
@@ -372,7 +376,6 @@ namespace Quiz
         }
 
     }
-    [Serializable]
     class User
     {
         private string login;

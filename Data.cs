@@ -96,6 +96,7 @@ namespace Quiz
             }
             Console.SetCursorPosition(Cursor.Cursor.offset_x, Cursor.Cursor.offset_y);
             Cursor.Cursor.Show();
+
         }
         static private void ShowValue<T>(T value, int level)
         {
@@ -179,20 +180,20 @@ namespace Quiz
                         case 2:
                             if (login == "")
                             {
-                                Error("! Login cannot be empty !");
+                                MSG("! Login cannot be empty !");
                                 Console.ReadKey(true);
                                 break;
                             }
                             if (password == "")
                             {
-                                Error("! Password cannot be empty !");
+                                MSG("! Password cannot be empty !");
                                 Console.ReadKey(true);
                                 break;
                             }
                             int index = Array.FindIndex(data.Users, user => user.Login == login && user.Password == password);
                             if (index == -1)
                             {
-                                Error("! Login or password is incorrect !");
+                                MSG("! Login or password is incorrect !");
                                 Console.ReadKey(true);
                                 break;
                             }
@@ -251,26 +252,40 @@ namespace Quiz
                         case 3:
                             if (login == "")
                             {
-                                Error("! Login cannot be empty !");
+                                MSG("! Login cannot be empty !");
                                 Console.ReadKey(true);
                                 break;
                             }
                             if (password == "")
                             {
-                                Error("! Password cannot be empty !");
+                                MSG("! Password cannot be empty !");
                                 Console.ReadKey(true);
                                 break;
                             }
                             int index = Array.FindIndex(data.Users, user => user.Login == login);
                             if (index != -1)
                             {
-                                Error("! Login already taken !");
+                                MSG("! Login already taken !");
+                                Console.ReadKey(true);
+                                break;
+                            
+                            }
+                            DateOnly dob;
+                            try
+                            {
+                                dob = new(yy, mm, dd);
+                            }
+                            catch (Exception)
+                            {
+                                MSG("! Date is incorrect !");
                                 Console.ReadKey(true);
                                 break;
                             }
-                            User user = new User(login, password, new DateOnly(yy,mm,dd));
+                            User user = new User(login, password, dob);
                             data.AddUser(user);
-                            return;
+                            MSG("  User registered.");
+                            Console.ReadKey(true);
+                            break;
                         case 4:
                             return;
                     }
@@ -286,12 +301,16 @@ namespace Quiz
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x + tab_size + offset, y);
+            Console.Write("                     ");
+            Console.SetCursorPosition(x + tab_size + offset, y);
             value = Console.ReadLine() ?? "";
             Console.SetCursorPosition(x, y);
         }
         public void enterValue(out int value, int offset=0)
         {
             (int x, int y) = Console.GetCursorPosition();
+            Console.SetCursorPosition(x + tab_size + offset, y);
+            Console.Write("                     ");
             Console.SetCursorPosition(x + tab_size + offset, y);
             int.TryParse(Console.ReadLine(), out value);
             Console.SetCursorPosition(x, y);
@@ -300,6 +319,9 @@ namespace Quiz
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x + tab_size + offset, y);
+            Console.Write("                     ");
+            Console.SetCursorPosition(x + tab_size + offset, y);
+
             pass = "";
             string result = "";
             char key;
@@ -337,7 +359,8 @@ namespace Quiz
                 "Settings",
                 "Logout"
             };
-            string title = "User Menu";
+            string title = "Logged in: ";
+            if (current_user != null) title += current_user.Login;
             Show(title, msg);
 
             int limit = msg.Length - 1;
@@ -356,7 +379,7 @@ namespace Quiz
                             //Stats();
                             break;
                         case 2:
-                            //Settings();
+                            Settings();
                             break;
                         case 3:
                             current_user = null;
@@ -367,7 +390,81 @@ namespace Quiz
                 }
             } while (move != msg.Length - 1);
         }
-        public void Error(string msg)
+        public void Settings()
+        {
+            if (current_user == null) return;
+            Console.Clear();
+            string[] msg = {
+                "Password: ",
+                "Date of Birth: ",
+                "Save",
+                "Back"
+            };
+            string title = "Settings: " + current_user.Login;
+            Show(title, msg);
+
+            int limit = msg.Length - 1;
+            int move;
+
+            string password = current_user.Password;
+            int dd = current_user.BirthDate.Day;
+            int mm = current_user.BirthDate.Month;
+            int yy = current_user.BirthDate.Year;
+
+            ShowValue(password, 0);
+            ShowValue($"{dd}.{mm}.{yy}", 1);
+
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                if (move != -1)
+                {
+                    switch (move)
+                    {
+                        case 0:
+                            enterPassword(out password, hide: false);
+                            break;
+                        case 1:
+                            enterValue(out dd);
+                            enterValue(out mm, 4);
+                            enterValue(out yy, 8);
+                            break;
+                        case 2:
+                            if (password == "")
+                            {
+                                MSG("! Password cannot be empty !");
+                                Console.ReadKey(true);
+                                break;
+                            }
+                            DateOnly dob;
+                            try
+                            {
+                                dob = new(yy, mm, dd);
+                            }
+                            catch (Exception)
+                            {
+                                MSG("! Date is incorrect !");
+                                Console.ReadKey(true);
+                                break;
+                            }
+                            User newUser = current_user.Clone() as User;
+                            newUser.SetPassword(password);
+                            newUser.SetDOB(new DateOnly(yy,mm,dd));
+                            data.UpdateUser(current_user, newUser);
+                            MSG("  Info saved.");
+                            Console.ReadKey(true);
+                            return;
+                        case 3:
+                            return;
+                    }
+                    Console.Clear();
+                    Show(title, msg);
+                    ShowValue(password, 0);
+                    ShowValue($"{dd}.{mm}f.{yy}", 1);
+                }
+            } while (move != msg.Length - 1);
+        }
+        public void MSG(string msg)
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x, y + error_level);
@@ -376,7 +473,7 @@ namespace Quiz
         }
 
     }
-    class User
+    class User : ICloneable
     {
         private string login;
         private string password;
@@ -398,6 +495,18 @@ namespace Quiz
             this.login = login;
             this.password = password;
             this.birthDate = birthDate;
+        }
+        public void SetPassword(string newpass)
+        {
+            this.password = newpass;
+        }
+        public void SetDOB(DateOnly dob)
+        {
+            birthDate = dob;
+        }
+        public object Clone()
+        {
+            return new User(login, password, birthDate);
         }
     }
     class Answer
@@ -465,20 +574,47 @@ namespace Quiz
             {}
             fs.Close();
         }
-        public void AddUser(User user)
+        private void WriteUser(User user)
         {
-            users = users.Append(user).ToArray();
             FileStream fs = new FileStream("users.bin", FileMode.Append, FileAccess.Write);
             BinaryWriter bw = new(fs, Encoding.Unicode);
             bw.Write(user.Login);
-            //bw.Write("\n");
             bw.Write(user.Password);
-            //bw.Write("\n");
             DateOnly dob = user.BirthDate;
             bw.Write(dob.Year);
             bw.Write(dob.Month);
             bw.Write(dob.Day);
             fs.Close();
+        }
+        private void WriteUsers()
+        {
+            FileStream fs = new FileStream("users.bin", FileMode.OpenOrCreate, FileAccess.Write);
+            BinaryWriter bw = new(fs, Encoding.Unicode);
+            DateOnly dob;
+            foreach(User user in users)
+            {
+                bw.Write(user.Login);
+                bw.Write(user.Password);
+                dob = user.BirthDate;
+                bw.Write(dob.Year);
+                bw.Write(dob.Month);
+                bw.Write(dob.Day);
+            }
+            fs.Close();
+        }
+        public void AddUser(User user)
+        {
+            users = users.Append(user).ToArray();
+            WriteUser(user);
+        }
+        public void UpdateUser(User user, User newUser)
+        {
+            int index = Array.IndexOf(users, user);
+            if (index != -1)
+            {
+                users[index] = newUser;
+            }
+            WriteUsers();
         }
     }
 }

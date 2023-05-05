@@ -65,7 +65,7 @@ namespace Quiz
 {
     enum Lesson
     {
-        Math, Biology, Geography, IT, Physics, History
+        Math, Biology, English, IT, Physics, History
     }
     enum Menus
     {
@@ -281,7 +281,7 @@ namespace Quiz
                                 Console.ReadKey(true);
                                 break;
                             }
-                            User user = new User(login, password, dob);
+                            User user = new User(login, password, dob, new Statistic());
                             data.AddUser(user);
                             MSG("  User registered.");
                             Console.ReadKey(true);
@@ -376,7 +376,7 @@ namespace Quiz
                             //quizesChooseMenu();
                             break;
                         case 1:
-                            //Stats();
+                            Stats();
                             break;
                         case 2:
                             Settings();
@@ -389,6 +389,22 @@ namespace Quiz
                     Show(title, msg);
                 }
             } while (move != msg.Length - 1);
+        }
+        public void Stats()
+        {
+            if (current_user == null) return;
+            Console.Clear();
+            Console.WriteLine(" -------- \tAVG\tBEST\tGAMES");
+            foreach(Lesson lesson in typeof(Lesson).GetEnumValues())
+            {
+                Console.WriteLine($"" +
+                    $"{lesson}\t\t" +
+                    $"{current_user.Stats.GetAvgInfo(lesson)}\t" +
+                    $"{current_user.Stats.GetBestInfo(lesson)}\t" +
+                    $"{current_user.Stats.GetGames(lesson)}");
+            }
+            Console.Write("\nPress any key to return ...");
+            Console.ReadKey(true);
         }
         public void Settings()
         {
@@ -478,6 +494,7 @@ namespace Quiz
         private string login;
         private string password;
         private DateOnly birthDate;
+        private Statistic stats;
         public string Login
         {
             get { return login; }
@@ -490,11 +507,16 @@ namespace Quiz
         {
             get { return birthDate; }
         }
-        public User(string login, string password, DateOnly birthDate)
+        public Statistic Stats
+        {
+            get { return stats; }
+        }
+        public User(string login, string password, DateOnly birthDate, Statistic stats)
         {
             this.login = login;
             this.password = password;
             this.birthDate = birthDate;
+            this.stats = stats;
         }
         public void SetPassword(string newpass)
         {
@@ -506,7 +528,44 @@ namespace Quiz
         }
         public object Clone()
         {
-            return new User(login, password, birthDate);
+            return new User(login, password, birthDate, stats);
+        }
+    }
+    class Statistic
+    {
+        private double[] avg_score;
+        private uint[] games;
+        private double[] best_score;
+        public Statistic()
+        {
+            avg_score = new double[typeof(Lesson).GetEnumValues().Length];
+            best_score = new double[typeof(Lesson).GetEnumValues().Length];
+            games = new uint[typeof(Lesson).GetEnumValues().Length];
+        }
+        public Statistic(double[] avg_score, uint[] games, double[] best_score)
+        {
+            this.avg_score = avg_score;
+            this.games = games;
+            this.best_score = best_score;
+        }
+
+        public double GetAvgInfo(Lesson lesson)
+        {
+            return avg_score[(int)lesson];
+        }
+        public double GetBestInfo(Lesson lesson)
+        {
+            return best_score[(int)lesson];
+        }
+        public uint GetGames(Lesson lesson)
+        {
+            return games[(int)lesson];
+        }
+        public void Played(Lesson lesson, int value)
+        {
+            uint games_amount = games[(int)lesson];
+            avg_score[(int)lesson] = (avg_score[(int)lesson] * games_amount + value) / games_amount + 1;
+            games[(int)lesson]++;
         }
     }
     class Answer
@@ -558,6 +617,9 @@ namespace Quiz
             string login;
             string password;
             int yy=1, mm=1, dd=1;
+            uint[] games = new uint[typeof(Lesson).GetEnumValues().Length];
+            double[] avg = new double[typeof(Lesson).GetEnumValues().Length];
+            double[] best = new double[typeof(Lesson).GetEnumValues().Length];
             try
             {
                 while (fs.Position < fs.Length)
@@ -567,7 +629,15 @@ namespace Quiz
                     yy = br.ReadInt32();
                     mm = br.ReadInt32();
                     dd = br.ReadInt32();
-                    users = users.Append(new User(login, password, new DateOnly(yy, mm, dd))).ToArray();
+                    foreach (Lesson lesson in typeof(Lesson).GetEnumValues())
+                    {
+                        games[(int)lesson] = br.ReadUInt32();
+                        avg[(int)lesson] = br.ReadDouble();
+                        best[(int)lesson] = br.ReadDouble();
+                    }
+                    users = users.Append(new User
+                            (login, password,new DateOnly(yy, mm, dd),new Statistic(avg, games, best)))
+                          .ToArray();
                 }
             }
             catch (Exception)
@@ -584,6 +654,13 @@ namespace Quiz
             bw.Write(dob.Year);
             bw.Write(dob.Month);
             bw.Write(dob.Day);
+            Statistic stats = user.Stats;
+            foreach(Lesson lesson in typeof(Lesson).GetEnumValues())
+            {
+                bw.Write(stats.GetGames(lesson));
+                bw.Write(stats.GetAvgInfo(lesson));
+                bw.Write(stats.GetBestInfo(lesson));
+            }
             fs.Close();
         }
         private void WriteUsers()
@@ -591,6 +668,7 @@ namespace Quiz
             FileStream fs = new FileStream("users.bin", FileMode.OpenOrCreate, FileAccess.Write);
             BinaryWriter bw = new(fs, Encoding.Unicode);
             DateOnly dob;
+            Statistic stats;
             foreach(User user in users)
             {
                 bw.Write(user.Login);
@@ -599,6 +677,13 @@ namespace Quiz
                 bw.Write(dob.Year);
                 bw.Write(dob.Month);
                 bw.Write(dob.Day);
+                stats = user.Stats;
+                foreach (Lesson lesson in typeof(Lesson).GetEnumValues())
+                {
+                    bw.Write(stats.GetGames(lesson));
+                    bw.Write(stats.GetAvgInfo(lesson));
+                    bw.Write(stats.GetBestInfo(lesson));
+                }
             }
             fs.Close();
         }

@@ -73,9 +73,9 @@ namespace Quiz
     }
     class Quiz
     {
-        static private int tab_size = 20;
-        static private int error_level = 4;
-        private Data data;
+        readonly static private int tab_size = 20;
+        readonly static private int error_level = 4;
+        readonly private Data data;
         private User? current_user;
         public User? UserInfo
         {
@@ -131,10 +131,10 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            loginPage();
+                            LoginPage();
                             break;
                         case 1:
-                            registerPage();
+                            RegisterPage();
                             break;
                         case 2:
                             return;
@@ -145,7 +145,7 @@ namespace Quiz
                 }
             } while (move != msg.Length - 1);
         }
-        public void loginPage()
+        public void LoginPage()
         {
             Console.Clear();
             string[] msg = {
@@ -172,10 +172,10 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            enterValue(out login);
+                            EnterValue(out login);
                             break;
                         case 1:
-                            hidden_pass = enterPassword(out password);
+                            hidden_pass = EnterPassword(out password);
                             break;
                         case 2:
                             if (login == "")
@@ -210,7 +210,7 @@ namespace Quiz
                 }
             } while (move != msg.Length - 1);
         }
-        public void registerPage()
+        public void RegisterPage()
         {
             Console.Clear();
             string[] msg = {
@@ -239,15 +239,15 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            enterValue(out login);
+                            EnterValue(out login);
                             break;
                         case 1:
-                            enterPassword(out password, hide : false);
+                            EnterPassword(out password, hide : false);
                             break;
                         case 2:
-                            enterValue(out dd);
-                            enterValue(out mm,4);
-                            enterValue(out yy,8);
+                            EnterValue(out dd);
+                            EnterValue(out mm,4);
+                            EnterValue(out yy,8);
                             break;
                         case 3:
                             if (login == "")
@@ -281,7 +281,7 @@ namespace Quiz
                                 Console.ReadKey(true);
                                 break;
                             }
-                            User user = new User(login, password, dob, new Statistic());
+                            User user = new(login, password, dob, new Statistic());
                             data.AddUser(user);
                             MSG("  User registered.");
                             Console.ReadKey(true);
@@ -297,7 +297,7 @@ namespace Quiz
                 }
             } while (move != msg.Length-1);
         }
-        public void enterValue(out string value, int offset = 0)
+        static public void EnterValue(out string value, int offset = 0)
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x + tab_size + offset, y);
@@ -306,7 +306,7 @@ namespace Quiz
             value = Console.ReadLine() ?? "";
             Console.SetCursorPosition(x, y);
         }
-        public void enterValue(out int value, int offset=0)
+        static public void EnterValue(out int value, int offset=0)
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x + tab_size + offset, y);
@@ -315,7 +315,7 @@ namespace Quiz
             int.TryParse(Console.ReadLine(), out value);
             Console.SetCursorPosition(x, y);
         }
-        public string enterPassword(out string pass, int offset=0, bool hide=true)
+        static public string EnterPassword(out string pass, int offset=0, bool hide=true)
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x + tab_size + offset, y);
@@ -438,12 +438,12 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            enterPassword(out password, hide: false);
+                            EnterPassword(out password, hide: false);
                             break;
                         case 1:
-                            enterValue(out dd);
-                            enterValue(out mm, 4);
-                            enterValue(out yy, 8);
+                            EnterValue(out dd);
+                            EnterValue(out mm, 4);
+                            EnterValue(out yy, 8);
                             break;
                         case 2:
                             if (password == "")
@@ -463,13 +463,17 @@ namespace Quiz
                                 Console.ReadKey(true);
                                 break;
                             }
-                            User newUser = current_user.Clone() as User;
-                            newUser.SetPassword(password);
-                            newUser.SetDOB(new DateOnly(yy,mm,dd));
-                            data.UpdateUser(current_user, newUser);
-                            MSG("  Info saved.");
-                            Console.ReadKey(true);
-                            return;
+                            User? newUser = current_user.Clone() as User;
+                            if (newUser != null)
+                            {
+                                newUser.SetPassword(password);
+                                newUser.SetDOB(new DateOnly(yy, mm, dd));
+                                data.UpdateUser(current_user, newUser);
+                                MSG("  Info saved.");
+                                Console.ReadKey(true);
+                                return;
+                            }
+                            break;
                         case 3:
                             return;
                     }
@@ -480,7 +484,7 @@ namespace Quiz
                 }
             } while (move != msg.Length - 1);
         }
-        public void MSG(string msg)
+        static public void MSG(string msg)
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x, y + error_level);
@@ -491,10 +495,10 @@ namespace Quiz
     }
     class User : ICloneable
     {
-        private string login;
+        readonly private string login;
         private string password;
         private DateOnly birthDate;
-        private Statistic stats;
+        readonly private Statistic stats;
         public string Login
         {
             get { return login; }
@@ -533,9 +537,9 @@ namespace Quiz
     }
     class Statistic
     {
-        private double[] avg_score;
-        private uint[] games;
-        private double[] best_score;
+        readonly private double[] avg_score;
+        readonly private uint[] games;
+        readonly private double[] best_score;
         public Statistic()
         {
             avg_score = new double[typeof(Lesson).GetEnumValues().Length];
@@ -616,7 +620,7 @@ namespace Quiz
 
             string login;
             string password;
-            int yy=1, mm=1, dd=1;
+            int yy, mm, dd;
             uint[] games = new uint[typeof(Lesson).GetEnumValues().Length];
             double[] avg = new double[typeof(Lesson).GetEnumValues().Length];
             double[] best = new double[typeof(Lesson).GetEnumValues().Length];
@@ -644,9 +648,9 @@ namespace Quiz
             {}
             fs.Close();
         }
-        private void WriteUser(User user)
+        static private void WriteUser(User user)
         {
-            FileStream fs = new FileStream("users.bin", FileMode.Append, FileAccess.Write);
+            FileStream fs = new("users.bin", FileMode.Append, FileAccess.Write);
             BinaryWriter bw = new(fs, Encoding.Unicode);
             bw.Write(user.Login);
             bw.Write(user.Password);
@@ -665,7 +669,7 @@ namespace Quiz
         }
         private void WriteUsers()
         {
-            FileStream fs = new FileStream("users.bin", FileMode.OpenOrCreate, FileAccess.Write);
+            FileStream fs = new("users.bin", FileMode.OpenOrCreate, FileAccess.Write);
             BinaryWriter bw = new(fs, Encoding.Unicode);
             DateOnly dob;
             Statistic stats;

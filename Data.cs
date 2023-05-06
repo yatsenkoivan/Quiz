@@ -476,7 +476,7 @@ namespace Quiz
                     Console.Clear();
                     Show(title, msg);
                     ShowValue(password, 0);
-                    ShowValue($"{dd}.{mm}f.{yy}", 1);
+                    ShowValue($"{dd}.{mm}.{yy}", 1);
                 }
             } while (move != msg.Length - 1);
         }

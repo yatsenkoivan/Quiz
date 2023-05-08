@@ -493,6 +493,7 @@ namespace Quiz
         }
 
     }
+    [Serializable]
     class User : ICloneable
     {
         readonly private string login;
@@ -535,6 +536,7 @@ namespace Quiz
             return new User(login, password, birthDate, stats);
         }
     }
+    [Serializable]
     class Statistic
     {
         readonly private double[] avg_score;
@@ -604,97 +606,54 @@ namespace Quiz
         }
         public Data()
         {
+            FileStream fs = new("users.bin", FileMode.OpenOrCreate, FileAccess.Read);
+
+            BinaryFormatter bf = new();
             users = Array.Empty<User>();
-
-            if (File.Exists("users.bin") == false)
-            {
-                return;
-            }
-            if (File.Exists("data.bin") == false)
-            {
-                return;
-            }
-            FileStream fs = File.OpenRead("users.bin");
-            BinaryReader br = new(fs, Encoding.Unicode);
-
 
             string login;
             string password;
             int yy, mm, dd;
-            uint[] games = new uint[typeof(Lesson).GetEnumValues().Length];
-            double[] avg = new double[typeof(Lesson).GetEnumValues().Length];
-            double[] best = new double[typeof(Lesson).GetEnumValues().Length];
+            Statistic stats;
+
             try
             {
-                while (fs.Position < fs.Length)
+                while (fs.Length != fs.Position)
                 {
-                    login = br.ReadString();
-                    password = br.ReadString();
-                    yy = br.ReadInt32();
-                    mm = br.ReadInt32();
-                    dd = br.ReadInt32();
-                    foreach (Lesson lesson in typeof(Lesson).GetEnumValues())
-                    {
-                        games[(int)lesson] = br.ReadUInt32();
-                        avg[(int)lesson] = br.ReadDouble();
-                        best[(int)lesson] = br.ReadDouble();
-                    }
-                    users = users.Append(new User
-                            (login, password,new DateOnly(yy, mm, dd),new Statistic(avg, games, best)))
-                          .ToArray();
+                    login = (string)bf.Deserialize(fs);
+                    password = (string)bf.Deserialize(fs);
+                    stats = (Statistic)bf.Deserialize(fs);
+                    yy = (int)bf.Deserialize(fs);
+                    mm = (int)bf.Deserialize(fs);
+                    dd = (int)bf.Deserialize(fs);
+                    users = users.Append(new User(login, password, new DateOnly(yy, mm, dd), stats)).ToArray();
                 }
             }
             catch (Exception)
-            {}
-            fs.Close();
-        }
-        static private void WriteUser(User user)
-        {
-            FileStream fs = new("users.bin", FileMode.Append, FileAccess.Write);
-            BinaryWriter bw = new(fs, Encoding.Unicode);
-            bw.Write(user.Login);
-            bw.Write(user.Password);
-            DateOnly dob = user.BirthDate;
-            bw.Write(dob.Year);
-            bw.Write(dob.Month);
-            bw.Write(dob.Day);
-            Statistic stats = user.Stats;
-            foreach(Lesson lesson in typeof(Lesson).GetEnumValues())
             {
-                bw.Write(stats.GetGames(lesson));
-                bw.Write(stats.GetAvgInfo(lesson));
-                bw.Write(stats.GetBestInfo(lesson));
+                Console.WriteLine("Debug");
             }
             fs.Close();
         }
         private void WriteUsers()
         {
             FileStream fs = new("users.bin", FileMode.OpenOrCreate, FileAccess.Write);
-            BinaryWriter bw = new(fs, Encoding.Unicode);
-            DateOnly dob;
-            Statistic stats;
+            BinaryFormatter bf = new();
             foreach(User user in users)
             {
-                bw.Write(user.Login);
-                bw.Write(user.Password);
-                dob = user.BirthDate;
-                bw.Write(dob.Year);
-                bw.Write(dob.Month);
-                bw.Write(dob.Day);
-                stats = user.Stats;
-                foreach (Lesson lesson in typeof(Lesson).GetEnumValues())
-                {
-                    bw.Write(stats.GetGames(lesson));
-                    bw.Write(stats.GetAvgInfo(lesson));
-                    bw.Write(stats.GetBestInfo(lesson));
-                }
+                bf.Serialize(fs,user.Login);
+                bf.Serialize(fs,user.Password);
+                bf.Serialize(fs,user.Stats);
+                bf.Serialize(fs, user.BirthDate.Year);
+                bf.Serialize(fs, user.BirthDate.Month);
+                bf.Serialize(fs, user.BirthDate.Day);
             }
             fs.Close();
         }
         public void AddUser(User user)
         {
             users = users.Append(user).ToArray();
-            WriteUser(user);
+            WriteUsers();
         }
         public void UpdateUser(User user, User newUser)
         {

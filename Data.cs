@@ -600,16 +600,18 @@ namespace Quiz
     class Data
     {
         private User[] users;
+        private Question[][] questions;
         public User[] Users
         {
             get { return users; }
         }
         public Data()
         {
-            FileStream fs = new("users.bin", FileMode.OpenOrCreate, FileAccess.Read);
-
             BinaryFormatter bf = new();
+
+            //USERS
             users = Array.Empty<User>();
+            FileStream fs_users = new("users.bin", FileMode.OpenOrCreate, FileAccess.Read);
 
             string login;
             string password;
@@ -618,22 +620,33 @@ namespace Quiz
 
             try
             {
-                while (fs.Length != fs.Position)
+                while (fs_users.Length != fs_users.Position)
                 {
-                    login = (string)bf.Deserialize(fs);
-                    password = (string)bf.Deserialize(fs);
-                    stats = (Statistic)bf.Deserialize(fs);
-                    yy = (int)bf.Deserialize(fs);
-                    mm = (int)bf.Deserialize(fs);
-                    dd = (int)bf.Deserialize(fs);
+                    login = (string)bf.Deserialize(fs_users);
+                    password = (string)bf.Deserialize(fs_users);
+                    stats = (Statistic)bf.Deserialize(fs_users);
+                    yy = (int)bf.Deserialize(fs_users);
+                    mm = (int)bf.Deserialize(fs_users);
+                    dd = (int)bf.Deserialize(fs_users);
                     users = users.Append(new User(login, password, new DateOnly(yy, mm, dd), stats)).ToArray();
                 }
             }
             catch (Exception)
-            {
-                Console.WriteLine("Debug");
-            }
-            fs.Close();
+            {}
+            fs_users.Close();
+
+            //QUESTIONS
+            questions = new Question[typeof(Lesson).GetEnumValues().Length][];
+            FileStream fs_data = new("data.bin", FileMode.OpenOrCreate, FileAccess.Read);
+
+            /*
+             * 
+             * 
+             * 
+             * 
+            */
+
+            fs_data.Close();
         }
         private void WriteUsers()
         {
@@ -641,9 +654,9 @@ namespace Quiz
             BinaryFormatter bf = new();
             foreach(User user in users)
             {
-                bf.Serialize(fs,user.Login);
-                bf.Serialize(fs,user.Password);
-                bf.Serialize(fs,user.Stats);
+                bf.Serialize(fs, user.Login);
+                bf.Serialize(fs, user.Password);
+                bf.Serialize(fs, user.Stats);
                 bf.Serialize(fs, user.BirthDate.Year);
                 bf.Serialize(fs, user.BirthDate.Month);
                 bf.Serialize(fs, user.BirthDate.Day);

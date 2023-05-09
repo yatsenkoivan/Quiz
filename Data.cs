@@ -373,7 +373,7 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            //quizesChooseMenu();
+                            QuizesChooseMenu();
                             break;
                         case 1:
                             Stats();
@@ -385,6 +385,27 @@ namespace Quiz
                             current_user = null;
                             return;
                     }
+                    Console.Clear();
+                    Show(title, msg);
+                }
+            } while (move != msg.Length - 1);
+        }
+        public void QuizesChooseMenu()
+        {
+            if (current_user == null) return;
+            Console.Clear();
+            string[] msg = typeof(Lesson).GetEnumNames().Append("Back").ToArray();
+            string title = "Choose quiz";
+            Show(title, msg);
+
+            int limit = msg.Length - 1;
+            int move;
+
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                if (move != -1)
+                {
                     Console.Clear();
                     Show(title, msg);
                 }
@@ -648,6 +669,18 @@ namespace Quiz
 
             fs_data.Close();
         }
+        private void WriteUser(User user)
+        {
+            FileStream fs = new("users.bin", FileMode.OpenOrCreate, FileAccess.Write);
+            BinaryFormatter bf = new();
+            bf.Serialize(fs, user.Login);
+            bf.Serialize(fs, user.Password);
+            bf.Serialize(fs, user.Stats);
+            bf.Serialize(fs, user.BirthDate.Year);
+            bf.Serialize(fs, user.BirthDate.Month);
+            bf.Serialize(fs, user.BirthDate.Day);
+            fs.Close();
+        }
         private void WriteUsers()
         {
             FileStream fs = new("users.bin", FileMode.OpenOrCreate, FileAccess.Write);
@@ -666,7 +699,7 @@ namespace Quiz
         public void AddUser(User user)
         {
             users = users.Append(user).ToArray();
-            WriteUsers();
+            WriteUser(user);
         }
         public void UpdateUser(User user, User newUser)
         {

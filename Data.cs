@@ -351,10 +351,12 @@ namespace Quiz
         }
         public void UserMenu()
         {
-            Console.BackgroundColor = ConsoleColor.DarkBlue;
+            if (current_user == null) return;
+            if (current_user.Login == "admin") Console.BackgroundColor = ConsoleColor.DarkGreen;
+            else Console.BackgroundColor = ConsoleColor.DarkBlue;
             Console.Clear();
             string[] msg = {
-                "Play Quiz",
+                "Quizes",
                 "Statistic",
                 "Settings",
                 "Logout"
@@ -421,6 +423,13 @@ namespace Quiz
             if (current_user == null) return;
             Console.Clear();
             string[] msg = { "Play", "Leaderboard", "Back" };
+
+            //ADMIN
+            if (current_user.Login == "admin")
+            {
+                msg = msg.Append("Edit").ToArray();
+            }
+
             string title = typeof(Lesson).GetEnumNames()[lesson];
             Show(title, msg);
 
@@ -441,6 +450,51 @@ namespace Quiz
                             //Leaderboard(lesson)
                             break;
                         case 2:
+                            return;
+                        case 3:
+                            if (current_user.Login == "admin")
+                            {
+                                Edit(lesson);
+                            }
+                            break;
+                    }
+                    Console.Clear();
+                    Show(title, msg);
+                }
+            } while (move != 2);
+        }
+        public void Edit(int lesson)
+        {
+            if (current_user == null) return;
+            Console.Clear();
+            string[] msg = {
+                "Add question",
+                "Edit question",
+                "Clear leaderboard",
+                "Back"
+            };
+            string title = $"Edit quiz {typeof(Lesson).GetEnumNames()[lesson]}";
+            Show(title, msg);
+
+            int limit = msg.Length - 1;
+            int move;
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                if (move != -1)
+                {
+                    switch (move)
+                    {
+                        case 0:
+                            //AddQuestion(lesson);
+                            break;
+                        case 1:
+                            //EditQuestion(lesson);
+                            break;
+                        case 2:
+                            //ClearLeaderboard(lesson);
+                            break;
+                        case 4:
                             return;
                     }
                     Console.Clear();
@@ -655,10 +709,19 @@ namespace Quiz
         private string text;
         private List<Answer> answers;
     }
+    class Leaderboard
+    {
+        private SortedList<uint, string> data;
+    }
+    class LessonInfo
+    {
+        private List<Question> questions;
+        private Leaderboard leaderboard;
+    }
     class Data
     {
         private List<User> users;
-        private List<Question>[] questions;
+        private LessonInfo[] lessonInfo;
         public List<User> Users
         {
             get { return users; }
@@ -693,8 +756,8 @@ namespace Quiz
             {}
             fs_users.Close();
 
-            //QUESTIONS
-            questions = new List<Question>[typeof(Lesson).GetEnumValues().Length];
+            //Lessons
+            lessonInfo = new LessonInfo[typeof(Lesson).GetEnumValues().Length];
             FileStream fs_data = new("data.bin", FileMode.OpenOrCreate, FileAccess.Read);
 
             /*
@@ -708,7 +771,11 @@ namespace Quiz
         }
         private void WriteUser(User user)
         {
-            FileStream fs = new("users.bin", FileMode.OpenOrCreate, FileAccess.Write);
+            if (File.Exists("users.bin") == false)
+            {
+                File.Create("users.bin");
+            }
+            FileStream fs = new("users.bin", FileMode.Append, FileAccess.Write);
             BinaryFormatter bf = new();
             bf.Serialize(fs, user.Login);
             bf.Serialize(fs, user.Password);

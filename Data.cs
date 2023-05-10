@@ -465,9 +465,10 @@ namespace Quiz
         }
         public void Edit(int lesson)
         {
-            if (current_user == null) return;
+            if (current_user == null || current_user.Login != "admin") return;
             Console.Clear();
             string[] msg = {
+                "Show questions",
                 "Add question",
                 "Edit question",
                 "Clear leaderboard",
@@ -486,12 +487,15 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            //AddQuestion(lesson);
+                            ShowQuestions(lesson);
                             break;
                         case 1:
-                            //EditQuestion(lesson);
+                            AddQuestion(lesson);
                             break;
                         case 2:
+                            //EditQuestion(lesson);
+                            break;
+                        case 3:
                             //ClearLeaderboard(lesson);
                             break;
                         case 4:
@@ -501,6 +505,142 @@ namespace Quiz
                     Show(title, msg);
                 }
             } while (move != msg.Length - 1);
+        }
+        public void ShowQuestions(int lesson)
+        {
+            if (current_user == null || current_user.Login != "admin") return;
+            Console.Clear();
+            data.LessonInfo[lesson].ShowQuestions();
+            Console.ReadKey(true);
+        }
+        public void AddQuestion(int lesson)
+        {
+            Console.Clear();
+            string[] msg = {
+                "Text: ",
+                "Amount of answers: ",
+                "Submit",
+                "Back"
+            };
+            string title = "Add question";
+            Show(title, msg);
+
+            string text = "";
+            int amount = 0;
+
+            int limit = msg.Length - 1;
+            int move;
+
+            ShowValue(text, 0);
+            ShowValue(amount, 1);
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                if (move != -1)
+                {
+                    switch (move)
+                    {
+                        case 0:
+                            EnterValue(out text);
+                            break;
+                        case 1:
+                            EnterValue(out amount);
+                            break;
+                        case 2:
+                            if (amount <= 0)
+                            {
+                                MSG("! Amount of answers value is incorrect !");
+                            }
+                            else if (text == "")
+                            {
+                                MSG("! Text cannot be empty !");
+                            }
+                            else
+                            {
+                                List<Answer>? answers = AddQuestionAnswers(amount);
+                                if (answers == null) break;
+                                Question q = new(text, answers);
+                                data.LessonInfo[lesson].AddQuestion(q);
+                                return;
+                            }
+                            break;
+                        case 3:
+                            return;
+                    }
+                    Console.Clear();
+                    Show(title, msg);
+                    ShowValue(text, 0);
+                    ShowValue(amount, 1);
+                }
+            } while (move != msg.Length - 1);
+        }
+        public List<Answer>? AddQuestionAnswers(int answers_amount)
+        {
+            Console.Clear();
+            string[] msg = new string[answers_amount * 2 + 2];
+            for (int index=0; index<answers_amount*2; index+=2)
+            {
+                msg[index] = $"{index/2 + 1}. Text: ";
+                msg[index + 1] = $"{index/2 + 1}. IsTrue: ";
+            }
+            int submit_level = answers_amount * 2;
+            int back_level = answers_amount * 2 + 1;
+
+            msg[submit_level] = "Submit";
+            msg[back_level] = "Back";
+
+            string title = "Enter answers";
+            Show(title, msg);
+
+            string[] answers_text = new string[answers_amount];
+            string[] answers_true = new string[answers_amount];
+
+            int limit = msg.Length - 1;
+            int move;
+
+
+            for (int level=0; level<answers_amount; level++)
+            {
+                ShowValue(answers_text[level], level*2);
+                ShowValue(answers_true[level], level*2+1);
+            }
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                if (move != -1)
+                {
+                    if (move == back_level) return null;
+                    else if (move == submit_level)
+                    {
+                        List<Answer> res = new List<Answer>();
+                        for (int index=0; index< answers_amount; index++)
+                        {
+                            res.Add(new Answer(answers_text[index], (answers_true[index] == "*" ? true : false)));
+                        }
+                        return res;
+                    }
+                    else
+                    {
+                        if (move%2 == 0) //Text
+                        {
+                            EnterValue(out answers_text[move / 2], move / 2);
+                        }
+                        else //IsTrue
+                        {
+                            if (answers_true[move / 2] == "*") answers_true[move / 2] = " ";
+                            else answers_true[move / 2] = "*";
+                        }
+                    }
+                    Console.Clear();
+                    Show(title, msg);
+                    for (int level = 0; level < answers_amount; level++)
+                    {
+                        ShowValue(answers_text[level], level * 2);
+                        ShowValue(answers_true[level], level * 2 + 1);
+                    }
+                }
+            } while (move != msg.Length - 1);
+            return null;
         }
         public void Stats()
         {
@@ -703,20 +843,51 @@ namespace Quiz
         {
             get { return is_true; }
         }
+        public override string ToString()
+        {
+            return $"{text} " + (is_true ? "(*)" : " ");
+        }
     }
     class Question
     {
         private string text;
         private List<Answer> answers;
+        public Question(string text, List<Answer> answers)
+        {
+            this.text = text;
+            this.answers = answers;
+        }
+
+        public override string ToString()
+        {
+            return $"{text}\n" + String.Join('\n', answers) + "\n--------------------------";
+        }
     }
     class Leaderboard
     {
         private SortedList<uint, string> data;
     }
+    [Serializable]
     class LessonInfo
     {
         private List<Question> questions;
         private Leaderboard leaderboard;
+        public LessonInfo()
+        {
+            questions = new List<Question>();
+            leaderboard = new();
+        }
+        public void ShowQuestions()
+        {
+            foreach (Question q in questions)
+            {
+                Console.WriteLine(q);
+            }
+        }
+        public void AddQuestion(Question q)
+        {
+            questions.Add(q);
+        }
     }
     class Data
     {
@@ -725,6 +896,10 @@ namespace Quiz
         public List<User> Users
         {
             get { return users; }
+        }
+        public LessonInfo[] LessonInfo
+        {
+            get { return lessonInfo; }
         }
         public Data()
         {
@@ -759,13 +934,16 @@ namespace Quiz
             //Lessons
             lessonInfo = new LessonInfo[typeof(Lesson).GetEnumValues().Length];
             FileStream fs_data = new("data.bin", FileMode.OpenOrCreate, FileAccess.Read);
-
-            /*
-             * 
-             * 
-             * 
-             * 
-            */
+            try
+            {
+                for (int lesson=0; lesson < typeof(Lesson).GetEnumValues().Length; lesson++)
+                    lessonInfo[lesson] = (LessonInfo)bf.Deserialize(fs_data);
+            }
+            catch (Exception)
+            {
+                for (int lesson = 0; lesson < typeof(Lesson).GetEnumValues().Length; lesson++)
+                    lessonInfo[lesson] = new();
+            }
 
             fs_data.Close();
         }

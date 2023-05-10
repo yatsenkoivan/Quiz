@@ -406,6 +406,43 @@ namespace Quiz
                 move = Cursor.Cursor.Move(limit);
                 if (move != -1)
                 {
+                    if (move == limit)
+                    {
+                        return;
+                    }
+                    LessonMenu(move);
+                    Console.Clear();
+                    Show(title, msg);
+                }
+            } while (move != msg.Length - 1);
+        }
+        public void LessonMenu(int lesson)
+        {
+            if (current_user == null) return;
+            Console.Clear();
+            string[] msg = { "Play", "Leaderboard", "Back" };
+            string title = typeof(Lesson).GetEnumNames()[lesson];
+            Show(title, msg);
+
+            int limit = msg.Length - 1;
+            int move;
+
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                if (move != -1)
+                {
+                    switch (move)
+                    {
+                        case 0:
+                            //Play(lesson)
+                            break;
+                        case 1:
+                            //Leaderboard(lesson)
+                            break;
+                        case 2:
+                            return;
+                    }
                     Console.Clear();
                     Show(title, msg);
                 }

@@ -328,7 +328,7 @@ namespace Quiz
             key = Console.ReadKey(true).KeyChar;
             do
             {
-                if (key == (char)ConsoleKey.Backspace)
+                if (key == (char)ConsoleKey.Backspace && result.Length > 0)
                 {
                     if (pass.Length > 0) pass = pass.Remove(pass.Length - 1);
                     if (result.Length > 0) result = result.Remove(result.Length - 1);

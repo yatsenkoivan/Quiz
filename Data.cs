@@ -190,7 +190,7 @@ namespace Quiz
                                 Console.ReadKey(true);
                                 break;
                             }
-                            int index = Array.FindIndex(data.Users, user => user.Login == login && user.Password == password);
+                            int index = data.Users.FindIndex(user => user.Login == login && user.Password == password);
                             if (index == -1)
                             {
                                 MSG("! Login or password is incorrect !");
@@ -262,7 +262,7 @@ namespace Quiz
                                 Console.ReadKey(true);
                                 break;
                             }
-                            int index = Array.FindIndex(data.Users, user => user.Login == login);
+                            int index = data.Users.FindIndex(user => user.Login == login);
                             if (index != -1)
                             {
                                 MSG("! Login already taken !");
@@ -616,13 +616,13 @@ namespace Quiz
     class Question
     {
         private string text;
-        private Answer[] Answers;
+        private List<Answer> answers;
     }
     class Data
     {
-        private User[] users;
-        private Question[][] questions;
-        public User[] Users
+        private List<User> users;
+        private List<Question>[] questions;
+        public List<User> Users
         {
             get { return users; }
         }
@@ -631,7 +631,7 @@ namespace Quiz
             BinaryFormatter bf = new();
 
             //USERS
-            users = Array.Empty<User>();
+            users = new List<User>();
             FileStream fs_users = new("users.bin", FileMode.OpenOrCreate, FileAccess.Read);
 
             string login;
@@ -649,7 +649,7 @@ namespace Quiz
                     yy = (int)bf.Deserialize(fs_users);
                     mm = (int)bf.Deserialize(fs_users);
                     dd = (int)bf.Deserialize(fs_users);
-                    users = users.Append(new User(login, password, new DateOnly(yy, mm, dd), stats)).ToArray();
+                    users.Add(new User(login, password, new DateOnly(yy, mm, dd), stats));
                 }
             }
             catch (Exception)
@@ -657,7 +657,7 @@ namespace Quiz
             fs_users.Close();
 
             //QUESTIONS
-            questions = new Question[typeof(Lesson).GetEnumValues().Length][];
+            questions = new List<Question>[typeof(Lesson).GetEnumValues().Length];
             FileStream fs_data = new("data.bin", FileMode.OpenOrCreate, FileAccess.Read);
 
             /*
@@ -698,12 +698,13 @@ namespace Quiz
         }
         public void AddUser(User user)
         {
-            users = users.Append(user).ToArray();
+            users.Add(user);
             WriteUser(user);
         }
         public void UpdateUser(User user, User newUser)
         {
-            int index = Array.IndexOf(users, user);
+            
+            int index = users.IndexOf(user);
             if (index != -1)
             {
                 users[index] = newUser;

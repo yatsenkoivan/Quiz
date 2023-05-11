@@ -198,7 +198,7 @@ namespace Quiz
                                 break;
                             }
                             current_user = data.Users[index];
-                            UserMenu();
+                            if (current_user != null) UserMenu();
                             return;
                         case 3:
                             return;
@@ -463,6 +463,11 @@ namespace Quiz
                 }
             } while (move != 2);
         }
+        public void Play(int lesson)
+        {
+            if (current_user == null) return;
+            Console.Clear();
+        }
         public void Edit(int lesson)
         {
             if (current_user == null || current_user.Login != "admin") return;
@@ -509,12 +514,14 @@ namespace Quiz
         public void ShowQuestions(int lesson)
         {
             if (current_user == null || current_user.Login != "admin") return;
+            if (lesson >= data.LessonInfo.Length) return;
             Console.Clear();
             data.LessonInfo[lesson].ShowQuestions();
             Console.ReadKey(true);
         }
         public void AddQuestion(int lesson)
         {
+            if (lesson >= data.LessonInfo.Length) return;
             Console.Clear();
             string[] msg = {
                 "Text: ",
@@ -720,7 +727,7 @@ namespace Quiz
                             {
                                 newUser.SetPassword(password);
                                 newUser.SetDOB(new DateOnly(yy, mm, dd));
-                                data.UpdateUser(current_user, newUser);
+                                data.UpdateUser(ref current_user, newUser);
                                 MSG("  Info saved.");
                                 Console.ReadKey(true);
                                 return;
@@ -983,7 +990,7 @@ namespace Quiz
             users.Add(user);
             WriteUser(user);
         }
-        public void UpdateUser(User user, User newUser)
+        public void UpdateUser(ref User user, User newUser)
         {
             
             int index = users.IndexOf(user);
@@ -991,6 +998,7 @@ namespace Quiz
             {
                 users[index] = newUser;
             }
+            user = newUser;
             WriteUsers();
         }
     }

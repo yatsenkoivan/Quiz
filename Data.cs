@@ -467,11 +467,14 @@ namespace Quiz
             string title;
             int limit;
             int move;
-            string[] isTrue;
+            bool[] isTrue;
 
 
             string[] msg;
 
+
+            uint correct = 0;
+            bool flag = true; //answer check
             foreach(Question current in data.LessonInfo[lesson].Questions)
             {
                 Console.Clear();
@@ -484,7 +487,7 @@ namespace Quiz
                 msg[msg.Length - 1] = "Submit";
 
                 limit = msg.Length-1;
-                isTrue = new string[current.Answers.Count];
+                isTrue = new bool[current.Answers.Count];
 
                 Show(title, msg);
 
@@ -493,24 +496,39 @@ namespace Quiz
                     move = Cursor.Cursor.Move(limit);
                     if (move != -1)
                     {
-                        if (move == limit) //Submit
+                        if (move == limit)
                         {
-                            //
+                            flag = true;
+                            for (int ans=0; ans<current.Answers.Count && flag; ans++)
+                            {
+                                if ((isTrue[ans] && current.Answers[ans].isTrue == false)
+                                    ||
+                                    (isTrue[ans]==false && current.Answers[ans].isTrue == true))
+                                {
+                                    flag = false;
+                                }
+                            }
+                            if (flag) correct++;
                         }
                         else
                         {
-                            if (isTrue[move] == "*") isTrue[move] = " ";
-                            else isTrue[move] = "*";
+                            if (isTrue[move]) isTrue[move] = false;
+                            else isTrue[move] = true;
                         }
                         Console.Clear();
                         Show(title, msg, move);
                         for (int level = 0; level < current.Answers.Count; level++)
                         {
-                            ShowValue(isTrue[level], level);
+                            ShowValue((isTrue[level] ? " *" : ""), level);
                         }
                     }
                 } while (move != limit);
             }
+            Console.Clear();
+            ShowValue("Your result:", 0);
+            ShowValue($"{correct}/{ data.LessonInfo[lesson].Questions.Count}",1);
+            ShowValue("Press any key to continue ...", 3);
+            Console.ReadKey(true);
         }
         public void Edit(int lesson)
         {
@@ -645,7 +663,7 @@ namespace Quiz
             Show(title, msg);
 
             string[] answers_text = new string[answers_amount];
-            string[] answers_true = new string[answers_amount];
+            bool[] answers_true = new bool[answers_amount];
 
             int limit = msg.Length - 1;
             int move;
@@ -654,7 +672,7 @@ namespace Quiz
             for (int level=0; level<answers_amount; level++)
             {
                 ShowValue(answers_text[level], level*2);
-                ShowValue(answers_true[level], level*2+1);
+                ShowValue((answers_true[level] ? " (*)" : ""), level*2+1);
             }
             do
             {
@@ -667,7 +685,7 @@ namespace Quiz
                         List<Answer> res = new List<Answer>();
                         for (int index=0; index< answers_amount; index++)
                         {
-                            res.Add(new Answer(answers_text[index], (answers_true[index] == "*" ? true : false)));
+                            res.Add(new Answer(answers_text[index], answers_true[index]));
                         }
                         return res;
                     }
@@ -679,8 +697,8 @@ namespace Quiz
                         }
                         else //IsTrue
                         {
-                            if (answers_true[move / 2] == "*") answers_true[move / 2] = " ";
-                            else answers_true[move / 2] = "*";
+                            if (answers_true[move / 2]) answers_true[move / 2] = false;
+                            else answers_true[move / 2] = true;
                         }
                     }
                     Console.Clear();
@@ -688,7 +706,7 @@ namespace Quiz
                     for (int level = 0; level < answers_amount; level++)
                     {
                         ShowValue(answers_text[level], level * 2);
-                        ShowValue(answers_true[level], level * 2 + 1);
+                        ShowValue((answers_true[level] ? " (*)" : ""), level * 2 + 1);
                     }
                 }
             } while (move != msg.Length - 1);

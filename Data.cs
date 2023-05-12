@@ -514,14 +514,14 @@ namespace Quiz
         public void ShowQuestions(int lesson)
         {
             if (current_user == null || current_user.Login != "admin") return;
-            if (lesson >= data.LessonInfo.Length) return;
+            if (lesson >= data.LessonInfo.Count) return;
             Console.Clear();
             data.LessonInfo[lesson].ShowQuestions();
             Console.ReadKey(true);
         }
         public void AddQuestion(int lesson)
         {
-            if (lesson >= data.LessonInfo.Length) return;
+            if (lesson >= data.LessonInfo.Count) return;
             Console.Clear();
             string[] msg = {
                 "Text: ",
@@ -568,6 +568,7 @@ namespace Quiz
                                 if (answers == null) break;
                                 Question q = new(text, answers);
                                 data.LessonInfo[lesson].AddQuestion(q);
+                                data.WriteData();
                                 return;
                             }
                             break;
@@ -833,6 +834,7 @@ namespace Quiz
             games[(int)lesson]++;
         }
     }
+    [Serializable]
     class Answer
     {
         private string text;
@@ -855,6 +857,7 @@ namespace Quiz
             return $"{text} " + (is_true ? "(*)" : " ");
         }
     }
+    [Serializable]
     class Question
     {
         private string text;
@@ -870,9 +873,14 @@ namespace Quiz
             return $"{text}\n" + String.Join('\n', answers) + "\n--------------------------";
         }
     }
+    [Serializable]
     class Leaderboard
     {
-        private SortedList<uint, string> data;
+        private Dictionary<string, uint> data;
+        public Leaderboard()
+        {
+            data = new();
+        }
     }
     [Serializable]
     class LessonInfo
@@ -899,12 +907,12 @@ namespace Quiz
     class Data
     {
         private List<User> users;
-        private LessonInfo[] lessonInfo;
+        private List<LessonInfo> lessonInfo;
         public List<User> Users
         {
             get { return users; }
         }
-        public LessonInfo[] LessonInfo
+        public List<LessonInfo> LessonInfo
         {
             get { return lessonInfo; }
         }
@@ -939,19 +947,19 @@ namespace Quiz
             fs_users.Close();
 
             //Lessons
-            lessonInfo = new LessonInfo[typeof(Lesson).GetEnumValues().Length];
             FileStream fs_data = new("data.bin", FileMode.OpenOrCreate, FileAccess.Read);
-            try
+            lessonInfo = new List<LessonInfo>();
+            for(int lesson= 0; lesson < typeof(Lesson).GetEnumValues().Length; lesson++)
             {
-                for (int lesson=0; lesson < typeof(Lesson).GetEnumValues().Length; lesson++)
-                    lessonInfo[lesson] = (LessonInfo)bf.Deserialize(fs_data);
+                try
+                {
+                    lessonInfo.Add((LessonInfo)bf.Deserialize(fs_data));
+                }
+                catch (Exception)
+                {
+                    lessonInfo.Add(new());
+                }
             }
-            catch (Exception)
-            {
-                for (int lesson = 0; lesson < typeof(Lesson).GetEnumValues().Length; lesson++)
-                    lessonInfo[lesson] = new();
-            }
-
             fs_data.Close();
         }
         private void WriteUser(User user)
@@ -982,6 +990,16 @@ namespace Quiz
                 bf.Serialize(fs, user.BirthDate.Year);
                 bf.Serialize(fs, user.BirthDate.Month);
                 bf.Serialize(fs, user.BirthDate.Day);
+            }
+            fs.Close();
+        }
+        public void WriteData()
+        {
+            FileStream fs = new("data.bin", FileMode.OpenOrCreate);
+            BinaryFormatter bf = new();
+            foreach (LessonInfo lesson in lessonInfo)
+            {
+                bf.Serialize(fs, lesson);
             }
             fs.Close();
         }

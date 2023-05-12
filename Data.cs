@@ -67,10 +67,6 @@ namespace Quiz
     {
         Math, Biology, English, IT, Physics, History
     }
-    enum Menus
-    {
-        Exit=0, Log_in, Register, password, login, Date_Of_Birth, submitLogin, submitRegister
-    }
     class Quiz
     {
         readonly static private int tab_size = 20;
@@ -81,7 +77,7 @@ namespace Quiz
         {
             get { return current_user; }
         }
-        static private void Show(string title, string[] msg)
+        static private void Show(string title, string[] msg, int cursor_y=0)
         {
             Console.SetCursorPosition(Cursor.Cursor.offset_x - 2, Cursor.Cursor.offset_y - 2);
             Console.WriteLine(title);
@@ -94,7 +90,7 @@ namespace Quiz
                 current++;
                 Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, current);
             }
-            Console.SetCursorPosition(Cursor.Cursor.offset_x, Cursor.Cursor.offset_y);
+            Console.SetCursorPosition(Cursor.Cursor.offset_x, Cursor.Cursor.offset_y+cursor_y);
             Cursor.Cursor.Show();
 
         }
@@ -141,7 +137,7 @@ namespace Quiz
                     }
                     Console.BackgroundColor = ConsoleColor.DarkGray;
                     Console.Clear();
-                    Show(title, msg);
+                    Show(title, msg, move);
                 }
             } while (move != msg.Length - 1);
         }
@@ -204,7 +200,7 @@ namespace Quiz
                             return;
                     }
                     Console.Clear();
-                    Show(title, msg);
+                    Show(title, msg, move);
                     ShowValue(login, 0);
                     ShowValue(hidden_pass, 1);
                 }
@@ -290,7 +286,7 @@ namespace Quiz
                             return;
                     }
                     Console.Clear();
-                    Show(title,msg);
+                    Show(title,msg,move);
                     ShowValue(login, 0);
                     ShowValue(password, 1);
                     ShowValue($"{dd}.{mm}.{yy}", 2);
@@ -388,7 +384,7 @@ namespace Quiz
                             return;
                     }
                     Console.Clear();
-                    Show(title, msg);
+                    Show(title, msg, move);
                 }
             } while (move != msg.Length - 1);
         }
@@ -414,7 +410,7 @@ namespace Quiz
                     }
                     LessonMenu(move);
                     Console.Clear();
-                    Show(title, msg);
+                    Show(title, msg, move);
                 }
             } while (move != msg.Length - 1);
         }
@@ -444,7 +440,7 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            //Play(lesson)
+                            Play(lesson);
                             break;
                         case 1:
                             //Leaderboard(lesson)
@@ -459,14 +455,62 @@ namespace Quiz
                             break;
                     }
                     Console.Clear();
-                    Show(title, msg);
+                    Show(title, msg, move);
                 }
             } while (move != 2);
         }
         public void Play(int lesson)
         {
-            if (current_user == null) return;
+            if (current_user == null || lesson >= data.LessonInfo.Count) return;
             Console.Clear();
+
+            string title;
+            int limit;
+            int move;
+            string[] isTrue;
+
+
+            string[] msg;
+
+            foreach(Question current in data.LessonInfo[lesson].Questions)
+            {
+                Console.Clear();
+                title = current.Text;
+                msg = new string[current.Answers.Count+1]; //+Submit
+                for (int ans=0; ans < current.Answers.Count; ans++)
+                {
+                    msg[ans] = current.Answers[ans].ToString();
+                }
+                msg[msg.Length - 1] = "Submit";
+
+                limit = msg.Length-1;
+                isTrue = new string[current.Answers.Count];
+
+                Show(title, msg);
+
+                do
+                {
+                    move = Cursor.Cursor.Move(limit);
+                    if (move != -1)
+                    {
+                        if (move == limit) //Submit
+                        {
+                            //
+                        }
+                        else
+                        {
+                            if (isTrue[move] == "*") isTrue[move] = " ";
+                            else isTrue[move] = "*";
+                        }
+                        Console.Clear();
+                        Show(title, msg, move);
+                        for (int level = 0; level < current.Answers.Count; level++)
+                        {
+                            ShowValue(isTrue[level], level);
+                        }
+                    }
+                } while (move != limit);
+            }
         }
         public void Edit(int lesson)
         {
@@ -507,7 +551,7 @@ namespace Quiz
                             return;
                     }
                     Console.Clear();
-                    Show(title, msg);
+                    Show(title, msg, move);
                 }
             } while (move != msg.Length - 1);
         }
@@ -576,7 +620,7 @@ namespace Quiz
                             return;
                     }
                     Console.Clear();
-                    Show(title, msg);
+                    Show(title, msg, move);
                     ShowValue(text, 0);
                     ShowValue(amount, 1);
                 }
@@ -640,7 +684,7 @@ namespace Quiz
                         }
                     }
                     Console.Clear();
-                    Show(title, msg);
+                    Show(title, msg,move);
                     for (int level = 0; level < answers_amount; level++)
                     {
                         ShowValue(answers_text[level], level * 2);
@@ -738,7 +782,7 @@ namespace Quiz
                             return;
                     }
                     Console.Clear();
-                    Show(title, msg);
+                    Show(title, msg, move);
                     ShowValue(password, 0);
                     ShowValue($"{dd}.{mm}.{yy}", 1);
                 }
@@ -854,7 +898,7 @@ namespace Quiz
         }
         public override string ToString()
         {
-            return $"{text} " + (is_true ? "(*)" : " ");
+            return text;
         }
     }
     [Serializable]
@@ -862,15 +906,28 @@ namespace Quiz
     {
         private string text;
         private List<Answer> answers;
+        public string Text
+        {
+            get { return text; }
+        }
+        public List<Answer> Answers
+        {
+            get { return answers; }
+        }
         public Question(string text, List<Answer> answers)
         {
             this.text = text;
             this.answers = answers;
         }
 
-        public override string ToString()
+        public void ShowInfo()
         {
-            return $"{text}\n" + String.Join('\n', answers) + "\n--------------------------";
+            Console.WriteLine(text);
+            foreach (Answer answer in answers)
+            {
+                Console.WriteLine(answer.ToString() + (answer.isTrue ? " (*)" : " "));
+            }
+            Console.WriteLine("-------------------------");
         }
     }
     [Serializable]
@@ -892,11 +949,15 @@ namespace Quiz
             questions = new List<Question>();
             leaderboard = new();
         }
+        public List<Question> Questions
+        {
+            get { return questions; }
+        }
         public void ShowQuestions()
         {
             foreach (Question q in questions)
             {
-                Console.WriteLine(q);
+                q.ShowInfo();
             }
         }
         public void AddQuestion(Question q)

@@ -443,7 +443,7 @@ namespace Quiz
                             Play(lesson);
                             break;
                         case 1:
-                            //Leaderboard(lesson)
+                            ShowLeaderboard(lesson);
                             break;
                         case 2:
                             return;
@@ -475,18 +475,18 @@ namespace Quiz
 
             uint correct = 0;
             bool flag = true; //answer check
-            foreach(Question current in data.LessonInfo[lesson].Questions)
+            foreach (Question current in data.LessonInfo[lesson].Questions)
             {
                 Console.Clear();
                 title = current.Text;
-                msg = new string[current.Answers.Count+1]; //+Submit
-                for (int ans=0; ans < current.Answers.Count; ans++)
+                msg = new string[current.Answers.Count + 1]; //+Submit
+                for (int ans = 0; ans < current.Answers.Count; ans++)
                 {
                     msg[ans] = current.Answers[ans].ToString();
                 }
                 msg[msg.Length - 1] = "Submit";
 
-                limit = msg.Length-1;
+                limit = msg.Length - 1;
                 isTrue = new bool[current.Answers.Count];
 
                 Show(title, msg);
@@ -499,11 +499,11 @@ namespace Quiz
                         if (move == limit)
                         {
                             flag = true;
-                            for (int ans=0; ans<current.Answers.Count && flag; ans++)
+                            for (int ans = 0; ans < current.Answers.Count && flag; ans++)
                             {
                                 if ((isTrue[ans] && current.Answers[ans].isTrue == false)
                                     ||
-                                    (isTrue[ans]==false && current.Answers[ans].isTrue == true))
+                                    (isTrue[ans] == false && current.Answers[ans].isTrue == true))
                                 {
                                     flag = false;
                                 }
@@ -525,9 +525,23 @@ namespace Quiz
                 } while (move != limit);
             }
             Console.Clear();
+            object? temp = typeof(Lesson).GetEnumValues().GetValue(lesson);
+            if (temp != null)
+            {
+                current_user.Stats.Played((Lesson)temp, correct); //(re)write to leaderboard
+                if (data.LessonInfo[lesson].Leaderboard.WriteResult(current_user.Login, correct))
+                    data.WriteData();
+            }
             ShowValue("Your result:", 0);
             ShowValue($"{correct}/{ data.LessonInfo[lesson].Questions.Count}",1);
             ShowValue("Press any key to continue ...", 3);
+            Console.ReadKey(true);
+        }
+        public void ShowLeaderboard(int lesson)
+        {
+            Console.Clear();
+            data.LessonInfo[lesson].Leaderboard.Show();
+            Console.WriteLine("\nPress any key to continue ...");
             Console.ReadKey(true);
         }
         public void Edit(int lesson)
@@ -563,7 +577,7 @@ namespace Quiz
                             //EditQuestion(lesson);
                             break;
                         case 3:
-                            //ClearLeaderboard(lesson);
+                            ClearLeaderboard(lesson);
                             break;
                         case 4:
                             return;
@@ -711,6 +725,11 @@ namespace Quiz
                 }
             } while (move != msg.Length - 1);
             return null;
+        }
+        public void ClearLeaderboard(int lesson)
+        {
+            data.LessonInfo[lesson].Leaderboard.Clear();
+            data.WriteData();
         }
         public void Stats()
         {
@@ -889,11 +908,12 @@ namespace Quiz
         {
             return games[(int)lesson];
         }
-        public void Played(Lesson lesson, int value)
+        public void Played(Lesson lesson, uint value)
         {
             uint games_amount = games[(int)lesson];
-            avg_score[(int)lesson] = (avg_score[(int)lesson] * games_amount + value) / games_amount + 1;
+            avg_score[(int)lesson] = (avg_score[(int)lesson] * games_amount + value) / (games_amount + 1);
             games[(int)lesson]++;
+            best_score[(int)lesson] = Math.Max(value, best_score[(int)lesson]);
         }
     }
     [Serializable]
@@ -956,6 +976,50 @@ namespace Quiz
         {
             data = new();
         }
+        //True means - result is better than is was.
+        public bool WriteResult(string login, uint value)
+        {
+            bool flag = true;
+            if (data.ContainsKey(login))
+            {
+                if (data[login] < value)
+                {
+                    if (data[login] < value)
+                    {
+                        data[login] = value;
+                        flag = true;
+                    }
+                }
+                else flag = false;
+            }
+            else
+            {
+                data.Add(login, value);
+                flag = true;
+            }
+            Sort();
+            return flag;
+        }
+        public void Show()
+        {
+            for (int result = 0; result < data.Count; result++)
+            {
+                Console.WriteLine($"{result + 1})" +
+                    $"{data.ElementAt(result).Key} - {data.ElementAt(result).Value}");
+            }
+            if (data.Count == 0)
+            {
+                Console.WriteLine("No data");
+            }
+        }
+        private void Sort()
+        {
+            data = data.OrderBy(x => -x.Value).ToDictionary(x => x.Key, x => x.Value);
+        }
+        public void Clear()
+        {
+            data.Clear();
+        }
     }
     [Serializable]
     class LessonInfo
@@ -966,6 +1030,10 @@ namespace Quiz
         {
             questions = new List<Question>();
             leaderboard = new();
+        }
+        public Leaderboard Leaderboard
+        {
+            get { return leaderboard; }
         }
         public List<Question> Questions
         {
@@ -1041,7 +1109,7 @@ namespace Quiz
             }
             fs_data.Close();
         }
-        private void WriteUser(User user)
+        public void WriteUser(User user)
         {
             if (File.Exists("users.bin") == false)
             {
@@ -1057,7 +1125,7 @@ namespace Quiz
             bf.Serialize(fs, user.BirthDate.Day);
             fs.Close();
         }
-        private void WriteUsers()
+        public void WriteUsers()
         {
             FileStream fs = new("users.bin", FileMode.OpenOrCreate, FileAccess.Write);
             BinaryFormatter bf = new();

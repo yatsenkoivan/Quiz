@@ -464,6 +464,14 @@ namespace Quiz
             if (current_user == null || lesson >= data.LessonInfo.Count) return;
             Console.Clear();
 
+            if (data.LessonInfo[lesson].Questions.Count == 0)
+            {
+                ShowValue("This quiz in not done yet", 0);
+                ShowValue("Try again later", 1);
+                ShowValue("Press any key to continue ...", 3);
+                Console.ReadKey(true);
+            }
+
             string title;
             int limit;
             int move;
@@ -530,7 +538,10 @@ namespace Quiz
             {
                 current_user.Stats.Played((Lesson)temp, correct); //(re)write to leaderboard
                 if (data.LessonInfo[lesson].Leaderboard.WriteResult(current_user.Login, correct))
+                {
                     data.WriteData();
+                    data.WriteUsers();
+                }
             }
             ShowValue("Your result:", 0);
             ShowValue($"{correct}/{ data.LessonInfo[lesson].Questions.Count}",1);
@@ -740,7 +751,7 @@ namespace Quiz
             {
                 Console.WriteLine($"" +
                     $"{lesson}\t\t" +
-                    $"{current_user.Stats.GetAvgInfo(lesson)}\t" +
+                    $"{ Math.Round(current_user.Stats.GetAvgInfo(lesson),3) }\t" +
                     $"{current_user.Stats.GetBestInfo(lesson)}\t" +
                     $"{current_user.Stats.GetGames(lesson)}");
             }

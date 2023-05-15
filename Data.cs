@@ -345,7 +345,7 @@ namespace Quiz
         public void UserMenu()
         {
             if (current_user == null) return;
-            if (current_user.Login == admin) Console.BackgroundColor = ConsoleColor.DarkGreen;
+            if (current_user.Login == admin) Console.BackgroundColor = ConsoleColor.DarkMagenta;
             else Console.BackgroundColor = ConsoleColor.DarkBlue;
             Console.Clear();
             string[] msg = {

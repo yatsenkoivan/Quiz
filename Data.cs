@@ -274,7 +274,7 @@ namespace Quiz
                                 Console.ReadKey(true);
                                 break;
                             }
-                            User user = new(login, password, dob, new Statistic(data.LessonInfo.Count));
+                            User user = new(login, password, dob, new Statistic());
                             data.AddUser(user);
                             MSG("  User registered.");
                             Console.ReadKey(true);
@@ -412,13 +412,62 @@ namespace Quiz
                     {
                         if (current_user.Login == admin)
                         {
-                            //AddQuiz();
+                            AddQuiz();
                         }
-                        else return;
+                        return;
                     }
                     LessonMenu(move);
                     Console.Clear();
                     Show(title, msg, move);
+                }
+            } while (move != msg.Length - 1);
+        }
+        public void AddQuiz()
+        {
+            Console.Clear();
+            string[] msg = {
+                "Name: ",
+                "Submit",
+                "Back"
+            };
+            string title = "Add quiz";
+            Show(title, msg);
+
+            string text = "";
+
+            int limit = msg.Length - 1;
+            int move;
+
+            ShowValue(text, 0);
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                if (move != -1)
+                {
+                    switch (move)
+                    {
+                        case 0:
+                            EnterValue(out text);
+                            break;
+                        case 1:
+                            if (data.LessonInfo.Any(lesson => lesson.Name == text))
+                            {
+                                MSG("! Name is already taken !");
+                                Console.ReadKey(true);
+                                break;
+                            }
+                            else
+                            {
+                                data.LessonInfo.Add(new LessonInfo(text));
+                                data.WriteData();
+                                return;
+                            }
+                        case 2:
+                            return;
+                    }
+                    Console.Clear();
+                    Show(title, msg, move);
+                    ShowValue(text, 0);
                 }
             } while (move != msg.Length - 1);
         }
@@ -479,6 +528,7 @@ namespace Quiz
                 ShowValue("Try again later", 1);
                 ShowValue("Press any key to continue ...", 3);
                 Console.ReadKey(true);
+                return;
             }
 
             string title;
@@ -490,7 +540,7 @@ namespace Quiz
             string[] msg;
 
 
-            uint correct = 0;
+            int correct = 0;
             bool flag = true; //answer check
             foreach (Question current in data.LessonInfo[lesson].Questions)
             {
@@ -542,12 +592,11 @@ namespace Quiz
                 } while (move != limit);
             }
             Console.Clear();
-            current_user.Stats.Played(lesson, correct); //(re)write to leaderboard
-            if (data.LessonInfo[lesson].Leaderboard.WriteResult(current_user.Login, correct))
-            {
-                data.WriteData();
-                data.WriteUsers();
-            }
+            current_user.Stats.Played(lesson, correct);
+            //(re)write to leaderboard
+            data.LessonInfo[lesson].Leaderboard.WriteResult(current_user.Login, correct);
+            data.WriteData();
+            data.WriteUsers();
             ShowValue("Your result:", 0);
             ShowValue($"{correct}/{ data.LessonInfo[lesson].Questions.Count}",1);
             ShowValue("Press any key to continue ...", 3);
@@ -751,26 +800,20 @@ namespace Quiz
         {
             if (current_user == null) return;
             Console.Clear();
-            uint games = 0;
-            try
-            {
-                games = current_user.Stats.GetGames(0);
-            }
-            catch (Exception)
-            {
-                ShowValue("No data.", 0);
-                ShowValue("Press any key to continue ...", 2);
-                Console.ReadKey(true);
-                return;
-            }
+            int quizes = current_user.Stats.GetQuizPlayed();
+
+            //ShowValue("No data.", 0);
+            //ShowValue("Press any key to continue ...", 2);
+            //Console.ReadKey(true);
+
             Console.WriteLine(" -------- \tAVG\tBEST\tGAMES");
-            for(uint index=0; index<games; index++)
+            for(int quiz=0; quiz < quizes; quiz++)
             {
                 Console.WriteLine($"" +
-                    $"{data.LessonInfo[(int)index].Name}\t\t" +
-                    $"{ Math.Round(current_user.Stats.GetAvgInfo(index),3) }\t" +
-                    $"{current_user.Stats.GetBestInfo(index)}\t" +
-                    $"{current_user.Stats.GetGames(index)}");
+                $"{data.LessonInfo[quiz].Name}\t\t" +
+                $"{Math.Round(current_user.Stats.GetAvgInfo(quiz), 3)}\t" +
+                $"{current_user.Stats.GetBestInfo(quiz)}\t" +
+                $"{current_user.Stats.GetGames(quiz)}");
             }
             Console.Write("\nPress any key to return ...");
             Console.ReadKey(true);
@@ -908,35 +951,46 @@ namespace Quiz
     [Serializable]
     class Statistic
     {
-        readonly private double[] avg_score;
-        readonly private uint[] games;
-        readonly private uint[] best_score;
-        public Statistic(int quizes)
+        readonly private List<double> avg_score;
+        readonly private List<int> games;
+        readonly private List<int> best_score;
+        public Statistic()
         {
-            if (quizes < 0) quizes = 0;
-            avg_score = new double[quizes];
-            games = new uint[quizes];
-            best_score = new uint[quizes];
+            avg_score = new List<double>();
+            games = new List<int>();
+            best_score = new List<int>();
         }
-
-        public double GetAvgInfo(uint lesson)
+        public int GetQuizPlayed()
+        {
+            return games.Count;
+        }
+        public double GetAvgInfo(int lesson)
         {
             return avg_score[lesson];
         }
-        public double GetBestInfo(uint lesson)
+        public int GetBestInfo(int lesson)
         {
             return best_score[lesson];
         }
-        public uint GetGames(uint lesson)
+        public int GetGames(int lesson)
         {
             return games[lesson];
         }
-        public void Played(int lesson, uint value)
+        public void Played(int lesson, int value)
         {
-            uint games_amount = games[(int)lesson];
-            avg_score[(int)lesson] = (avg_score[(int)lesson] * games_amount + value) / (games_amount + 1);
-            games[(int)lesson]++;
-            best_score[(int)lesson] = Math.Max(value, best_score[(int)lesson]);
+            if (games.Count <= lesson)
+            {
+                for (int i=games.Count; i <= lesson; i++)
+                {
+                    games.Add(0);
+                    avg_score.Add(0);
+                    best_score.Add(0);
+                }
+            }
+            int games_amount = games[lesson];
+            avg_score[lesson] = (avg_score[lesson] * games_amount + value) / (games_amount + 1);
+            games[lesson]++;
+            best_score[lesson] = Math.Max(value, best_score[lesson]);
         }
     }
     [Serializable]
@@ -994,13 +1048,13 @@ namespace Quiz
     [Serializable]
     class Leaderboard
     {
-        private Dictionary<string, uint> data;
+        private Dictionary<string, int> data;
         public Leaderboard()
         {
             data = new();
         }
         //True means - result is better than is was.
-        public bool WriteResult(string login, uint value)
+        public bool WriteResult(string login, int value)
         {
             bool flag = true;
             if (data.ContainsKey(login))

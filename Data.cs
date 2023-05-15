@@ -63,12 +63,9 @@ namespace Cursor
 
 namespace Quiz
 {
-    enum Lesson
-    {
-        Math, Biology, English, IT, Physics, History
-    }
     class Quiz
     {
+        readonly static private string admin = "admin";
         readonly static private int tab_size = 20;
         readonly static private int error_level = 4;
         readonly private Data data;
@@ -277,7 +274,7 @@ namespace Quiz
                                 Console.ReadKey(true);
                                 break;
                             }
-                            User user = new(login, password, dob, new Statistic());
+                            User user = new(login, password, dob, new Statistic(data.LessonInfo.Count));
                             data.AddUser(user);
                             MSG("  User registered.");
                             Console.ReadKey(true);
@@ -348,7 +345,7 @@ namespace Quiz
         public void UserMenu()
         {
             if (current_user == null) return;
-            if (current_user.Login == "admin") Console.BackgroundColor = ConsoleColor.DarkGreen;
+            if (current_user.Login == admin) Console.BackgroundColor = ConsoleColor.DarkGreen;
             else Console.BackgroundColor = ConsoleColor.DarkBlue;
             Console.Clear();
             string[] msg = {
@@ -390,9 +387,15 @@ namespace Quiz
         }
         public void QuizesChooseMenu()
         {
-            if (current_user == null) return;
             Console.Clear();
-            string[] msg = typeof(Lesson).GetEnumNames().Append("Back").ToArray();
+            if (current_user == null) return;
+            string[] msg = (from lesson in data.LessonInfo select lesson.Name)
+                            .Append("Back")
+                            .ToArray();
+            if (current_user.Login == admin)
+            {
+                msg = msg.Append("Add").ToArray();
+            }
             string title = "Choose quiz";
             Show(title, msg);
 
@@ -404,9 +407,14 @@ namespace Quiz
                 move = Cursor.Cursor.Move(limit);
                 if (move != -1)
                 {
+                    if (move == limit - 1 && current_user.Login == admin) return;
                     if (move == limit)
                     {
-                        return;
+                        if (current_user.Login == admin)
+                        {
+                            //AddQuiz();
+                        }
+                        else return;
                     }
                     LessonMenu(move);
                     Console.Clear();
@@ -417,16 +425,17 @@ namespace Quiz
         public void LessonMenu(int lesson)
         {
             if (current_user == null) return;
+            if (lesson < 0 || lesson > data.LessonInfo.Count) return;
             Console.Clear();
             string[] msg = { "Play", "Leaderboard", "Back" };
 
             //ADMIN
-            if (current_user.Login == "admin")
+            if (current_user.Login == admin)
             {
                 msg = msg.Append("Edit").ToArray();
             }
 
-            string title = typeof(Lesson).GetEnumNames()[lesson];
+            string title = data.LessonInfo[lesson].Name;
             Show(title, msg);
 
             int limit = msg.Length - 1;
@@ -448,7 +457,7 @@ namespace Quiz
                         case 2:
                             return;
                         case 3:
-                            if (current_user.Login == "admin")
+                            if (current_user.Login == admin)
                             {
                                 Edit(lesson);
                             }
@@ -533,15 +542,11 @@ namespace Quiz
                 } while (move != limit);
             }
             Console.Clear();
-            object? temp = typeof(Lesson).GetEnumValues().GetValue(lesson);
-            if (temp != null)
+            current_user.Stats.Played(lesson, correct); //(re)write to leaderboard
+            if (data.LessonInfo[lesson].Leaderboard.WriteResult(current_user.Login, correct))
             {
-                current_user.Stats.Played((Lesson)temp, correct); //(re)write to leaderboard
-                if (data.LessonInfo[lesson].Leaderboard.WriteResult(current_user.Login, correct))
-                {
-                    data.WriteData();
-                    data.WriteUsers();
-                }
+                data.WriteData();
+                data.WriteUsers();
             }
             ShowValue("Your result:", 0);
             ShowValue($"{correct}/{ data.LessonInfo[lesson].Questions.Count}",1);
@@ -557,7 +562,7 @@ namespace Quiz
         }
         public void Edit(int lesson)
         {
-            if (current_user == null || current_user.Login != "admin") return;
+            if (current_user == null || current_user.Login != admin) return;
             Console.Clear();
             string[] msg = {
                 "Show questions",
@@ -566,7 +571,7 @@ namespace Quiz
                 "Clear leaderboard",
                 "Back"
             };
-            string title = $"Edit quiz {typeof(Lesson).GetEnumNames()[lesson]}";
+            string title = $"Edit quiz {data.LessonInfo[lesson].Name}";
             Show(title, msg);
 
             int limit = msg.Length - 1;
@@ -600,7 +605,7 @@ namespace Quiz
         }
         public void ShowQuestions(int lesson)
         {
-            if (current_user == null || current_user.Login != "admin") return;
+            if (current_user == null || current_user.Login != admin) return;
             if (lesson >= data.LessonInfo.Count) return;
             Console.Clear();
             data.LessonInfo[lesson].ShowQuestions();
@@ -746,14 +751,26 @@ namespace Quiz
         {
             if (current_user == null) return;
             Console.Clear();
+            uint games = 0;
+            try
+            {
+                games = current_user.Stats.GetGames(0);
+            }
+            catch (Exception)
+            {
+                ShowValue("No data.", 0);
+                ShowValue("Press any key to continue ...", 2);
+                Console.ReadKey(true);
+                return;
+            }
             Console.WriteLine(" -------- \tAVG\tBEST\tGAMES");
-            foreach(Lesson lesson in typeof(Lesson).GetEnumValues())
+            for(uint index=0; index<games; index++)
             {
                 Console.WriteLine($"" +
-                    $"{lesson}\t\t" +
-                    $"{ Math.Round(current_user.Stats.GetAvgInfo(lesson),3) }\t" +
-                    $"{current_user.Stats.GetBestInfo(lesson)}\t" +
-                    $"{current_user.Stats.GetGames(lesson)}");
+                    $"{data.LessonInfo[(int)index].Name}\t\t" +
+                    $"{ Math.Round(current_user.Stats.GetAvgInfo(index),3) }\t" +
+                    $"{current_user.Stats.GetBestInfo(index)}\t" +
+                    $"{current_user.Stats.GetGames(index)}");
             }
             Console.Write("\nPress any key to return ...");
             Console.ReadKey(true);
@@ -893,33 +910,28 @@ namespace Quiz
     {
         readonly private double[] avg_score;
         readonly private uint[] games;
-        readonly private double[] best_score;
-        public Statistic()
+        readonly private uint[] best_score;
+        public Statistic(int quizes)
         {
-            avg_score = new double[typeof(Lesson).GetEnumValues().Length];
-            best_score = new double[typeof(Lesson).GetEnumValues().Length];
-            games = new uint[typeof(Lesson).GetEnumValues().Length];
-        }
-        public Statistic(double[] avg_score, uint[] games, double[] best_score)
-        {
-            this.avg_score = avg_score;
-            this.games = games;
-            this.best_score = best_score;
+            if (quizes < 0) quizes = 0;
+            avg_score = new double[quizes];
+            games = new uint[quizes];
+            best_score = new uint[quizes];
         }
 
-        public double GetAvgInfo(Lesson lesson)
+        public double GetAvgInfo(uint lesson)
         {
-            return avg_score[(int)lesson];
+            return avg_score[lesson];
         }
-        public double GetBestInfo(Lesson lesson)
+        public double GetBestInfo(uint lesson)
         {
-            return best_score[(int)lesson];
+            return best_score[lesson];
         }
-        public uint GetGames(Lesson lesson)
+        public uint GetGames(uint lesson)
         {
-            return games[(int)lesson];
+            return games[lesson];
         }
-        public void Played(Lesson lesson, uint value)
+        public void Played(int lesson, uint value)
         {
             uint games_amount = games[(int)lesson];
             avg_score[(int)lesson] = (avg_score[(int)lesson] * games_amount + value) / (games_amount + 1);
@@ -1035,12 +1047,18 @@ namespace Quiz
     [Serializable]
     class LessonInfo
     {
+        private string name;
         private List<Question> questions;
         private Leaderboard leaderboard;
-        public LessonInfo()
+        public LessonInfo(string name)
         {
+            this.name = name;
             questions = new List<Question>();
             leaderboard = new();
+        }
+        public string Name
+        {
+            get { return name; }
         }
         public Leaderboard Leaderboard
         {
@@ -1106,17 +1124,13 @@ namespace Quiz
 
             //Lessons
             FileStream fs_data = new("data.bin", FileMode.OpenOrCreate, FileAccess.Read);
-            lessonInfo = new List<LessonInfo>();
-            for(int lesson= 0; lesson < typeof(Lesson).GetEnumValues().Length; lesson++)
+            try
             {
-                try
-                {
-                    lessonInfo.Add((LessonInfo)bf.Deserialize(fs_data));
-                }
-                catch (Exception)
-                {
-                    lessonInfo.Add(new());
-                }
+                lessonInfo = ((List<LessonInfo>)bf.Deserialize(fs_data));
+            }
+            catch (Exception)
+            {
+                lessonInfo = new List<LessonInfo>();
             }
             fs_data.Close();
         }
@@ -1155,10 +1169,7 @@ namespace Quiz
         {
             FileStream fs = new("data.bin", FileMode.OpenOrCreate);
             BinaryFormatter bf = new();
-            foreach (LessonInfo lesson in lessonInfo)
-            {
-                bf.Serialize(fs, lesson);
-            }
+            bf.Serialize(fs, lessonInfo);
             fs.Close();
         }
         public void AddUser(User user)

@@ -22,21 +22,21 @@ namespace Cursor
         static public int dif = 2;
         static public int Move(int limit)
         {
-            char key = Console.ReadKey(true).KeyChar;
+            ConsoleKey key = Console.ReadKey(true).Key;
             int change_pos = 0;
             int current_pos = Console.GetCursorPosition().Top - offset_y;
             switch (key)
             {
-                case 'w':
-                case 'W':
+                case ConsoleKey.W:
+                case ConsoleKey.UpArrow:
                     change_pos = -1;
                     break;
-                case 's':
-                case 'S':
+                case ConsoleKey.S:
+                case ConsoleKey.DownArrow:
                     change_pos = 1;
                     break;
-                case ' ':
-                case (char)ConsoleKey.Enter:
+                case ConsoleKey.Spacebar:
+                case ConsoleKey.Enter:
                     return current_pos;
             }
             if (current_pos + change_pos > limit || current_pos  + change_pos < 0) return -1;

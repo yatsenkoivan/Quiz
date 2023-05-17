@@ -238,9 +238,7 @@ namespace Quiz
                             EnterPassword(out password, hide : false);
                             break;
                         case 2:
-                            EnterValue(out dd);
-                            EnterValue(out mm,4);
-                            EnterValue(out yy,8);
+                            EnterDOB(out dd, out mm, out yy);
                             break;
                         case 3:
                             if (login == "")
@@ -274,7 +272,7 @@ namespace Quiz
                                 Console.ReadKey(true);
                                 break;
                             }
-                            User user = new(login, password, dob, new Statistic());
+                            User user = new(login, password, dob);
                             data.AddUser(user);
                             MSG("  User registered.");
                             Console.ReadKey(true);
@@ -342,6 +340,26 @@ namespace Quiz
             } while (key != (char)ConsoleKey.Enter);
             return result;
         }
+        public void EnterDOB(out int yy, out int mm, out int dd)
+        {
+            string input;
+            int[] res = Array.Empty<int>();
+            int temp;
+            do
+            {
+                EnterValue(out input, res.Length*4);
+                input = input.Replace('.', ' ');
+                string[] arr = input.Split(' ');
+                foreach (string inp in arr)
+                {
+                    int.TryParse(inp, out temp);
+                    res = res.Append(temp).ToArray();
+                }
+            } while (res.Length < 3);
+            yy = res[0];
+            mm = res[1];
+            dd = res[2];
+        }
         public void UserMenu()
         {
             if (current_user == null) return;
@@ -394,7 +412,7 @@ namespace Quiz
                             .ToArray();
             if (current_user.Login == admin)
             {
-                msg = msg.Append("Add").ToArray();
+                msg = msg.Append("Add").Append("Remove").ToArray();
             }
             string title = "Choose quiz";
             Show(title, msg);
@@ -407,12 +425,17 @@ namespace Quiz
                 move = Cursor.Cursor.Move(limit);
                 if (move != -1)
                 {
-                    if (move == limit - 1 && current_user.Login == admin) return;
+                    if (move == limit - 2 && current_user.Login == admin) return;
+                    if (move == limit-1 && current_user.Login == admin)
+                    {
+                        AddQuiz();
+                        return;
+                    }
                     if (move == limit)
                     {
                         if (current_user.Login == admin)
                         {
-                            AddQuiz();
+                            RemoveQuiz();
                         }
                         return;
                     }
@@ -470,6 +493,10 @@ namespace Quiz
                     ShowValue(text, 0);
                 }
             } while (move != msg.Length - 1);
+        }
+        public void RemoveQuiz()
+        {
+
         }
         public void LessonMenu(int lesson)
         {
@@ -592,7 +619,7 @@ namespace Quiz
                 } while (move != limit);
             }
             Console.Clear();
-            current_user.Stats.Played(lesson, correct);
+            data.LessonInfo[lesson].Played(current_user.Login, correct);
             //(re)write to leaderboard
             data.LessonInfo[lesson].Leaderboard.WriteResult(current_user.Login, correct);
             data.WriteData();
@@ -658,6 +685,9 @@ namespace Quiz
             if (lesson >= data.LessonInfo.Count) return;
             Console.Clear();
             data.LessonInfo[lesson].ShowQuestions();
+            if (data.LessonInfo[lesson].Questions.Count == 0)
+                Console.WriteLine("No data");
+            Console.WriteLine("\nPress any key to continue");
             Console.ReadKey(true);
         }
         public void AddQuestion(int lesson)
@@ -800,20 +830,30 @@ namespace Quiz
         {
             if (current_user == null) return;
             Console.Clear();
-            int quizes = current_user.Stats.GetQuizPlayed();
 
             //ShowValue("No data.", 0);
             //ShowValue("Press any key to continue ...", 2);
             //Console.ReadKey(true);
 
-            Console.WriteLine(" -------- \tAVG\tBEST\tGAMES");
-            for(int quiz=0; quiz < quizes; quiz++)
+            //Console.WriteLine(" -------- \tAVG\tBEST\tGAMES");
+            bool flag = true;
+            foreach(LessonInfo l in data.LessonInfo)
             {
+                if (l.Stats.ContainsKey(current_user.Login) == false) continue;
+                else if (flag)
+                {
+                    Console.WriteLine(" -------- \tAVG\tBEST\tGAMES");
+                    flag = false;
+                }
                 Console.WriteLine($"" +
-                $"{data.LessonInfo[quiz].Name}\t\t" +
-                $"{Math.Round(current_user.Stats.GetAvgInfo(quiz), 3)}\t" +
-                $"{current_user.Stats.GetBestInfo(quiz)}\t" +
-                $"{current_user.Stats.GetGames(quiz)}");
+                $"{l.Name}\t\t" +
+                $"{Math.Round(l.Stats[current_user.Login].AVG, 3)}\t" +
+                $"{l.Stats[current_user.Login].Best}\t" +
+                $"{l.Stats[current_user.Login].Games}");
+            }
+            if (flag)
+            {
+                Console.WriteLine("No data.");
             }
             Console.Write("\nPress any key to return ...");
             Console.ReadKey(true);
@@ -853,9 +893,7 @@ namespace Quiz
                             EnterPassword(out password, hide: false);
                             break;
                         case 1:
-                            EnterValue(out dd);
-                            EnterValue(out mm, 4);
-                            EnterValue(out yy, 8);
+                            EnterDOB(out dd, out mm, out yy);
                             break;
                         case 2:
                             if (password == "")
@@ -911,7 +949,6 @@ namespace Quiz
         readonly private string login;
         private string password;
         private DateOnly birthDate;
-        readonly private Statistic stats;
         public string Login
         {
             get { return login; }
@@ -924,16 +961,11 @@ namespace Quiz
         {
             get { return birthDate; }
         }
-        public Statistic Stats
-        {
-            get { return stats; }
-        }
-        public User(string login, string password, DateOnly birthDate, Statistic stats)
+        public User(string login, string password, DateOnly birthDate)
         {
             this.login = login;
             this.password = password;
             this.birthDate = birthDate;
-            this.stats = stats;
         }
         public void SetPassword(string newpass)
         {
@@ -945,52 +977,29 @@ namespace Quiz
         }
         public object Clone()
         {
-            return new User(login, password, birthDate, stats);
+            return new User(login, password, birthDate);
         }
     }
     [Serializable]
     class Statistic
     {
-        readonly private List<double> avg_score;
-        readonly private List<int> games;
-        readonly private List<int> best_score;
-        public Statistic()
+        private double avg_score;
+        private int games;
+        private int best_score;
+        public int Games
         {
-            avg_score = new List<double>();
-            games = new List<int>();
-            best_score = new List<int>();
+            get { return games; }
+            set { games = (value >= 0 ? value : 0); }
         }
-        public int GetQuizPlayed()
+        public double AVG
         {
-            return games.Count;
+            get { return avg_score; }
+            set { avg_score = (value >= 0 ? value : 0); }
         }
-        public double GetAvgInfo(int lesson)
+        public int Best
         {
-            return avg_score[lesson];
-        }
-        public int GetBestInfo(int lesson)
-        {
-            return best_score[lesson];
-        }
-        public int GetGames(int lesson)
-        {
-            return games[lesson];
-        }
-        public void Played(int lesson, int value)
-        {
-            if (games.Count <= lesson)
-            {
-                for (int i=games.Count; i <= lesson; i++)
-                {
-                    games.Add(0);
-                    avg_score.Add(0);
-                    best_score.Add(0);
-                }
-            }
-            int games_amount = games[lesson];
-            avg_score[lesson] = (avg_score[lesson] * games_amount + value) / (games_amount + 1);
-            games[lesson]++;
-            best_score[lesson] = Math.Max(value, best_score[lesson]);
+            get { return best_score; }
+            set { best_score = (value >= 0 ? value : 0); }
         }
     }
     [Serializable]
@@ -1053,10 +1062,8 @@ namespace Quiz
         {
             data = new();
         }
-        //True means - result is better than is was.
-        public bool WriteResult(string login, int value)
+        public void WriteResult(string login, int value)
         {
-            bool flag = true;
             if (data.ContainsKey(login))
             {
                 if (data[login] < value)
@@ -1064,18 +1071,14 @@ namespace Quiz
                     if (data[login] < value)
                     {
                         data[login] = value;
-                        flag = true;
                     }
                 }
-                else flag = false;
             }
             else
             {
                 data.Add(login, value);
-                flag = true;
             }
             Sort();
-            return flag;
         }
         public void Show()
         {
@@ -1104,11 +1107,17 @@ namespace Quiz
         private string name;
         private List<Question> questions;
         private Leaderboard leaderboard;
+        private SortedDictionary<string, Statistic> stats;
         public LessonInfo(string name)
         {
             this.name = name;
             questions = new List<Question>();
             leaderboard = new();
+            stats = new();
+        }
+        public SortedDictionary<string, Statistic> Stats
+        {
+            get { return stats; }
         }
         public string Name
         {
@@ -1132,6 +1141,20 @@ namespace Quiz
         public void AddQuestion(Question q)
         {
             questions.Add(q);
+        }
+        public void Played(string name, int result)
+        {
+            if (stats.ContainsKey(name))
+            {
+                stats[name].Best = Math.Max(stats[name].Best, result);
+                stats[name].AVG = (stats[name].AVG * stats[name].Games + result) / (stats[name].Games);
+                stats[name].Games++;
+            }
+            else
+            {
+                stats.Add(name, new Statistic() { Games = 1, Best = result, AVG = result });
+            }
+            leaderboard.WriteResult(name, result);
         }
     }
     class Data
@@ -1157,7 +1180,6 @@ namespace Quiz
             string login;
             string password;
             int yy, mm, dd;
-            Statistic stats;
 
             try
             {
@@ -1165,11 +1187,10 @@ namespace Quiz
                 {
                     login = (string)bf.Deserialize(fs_users);
                     password = (string)bf.Deserialize(fs_users);
-                    stats = (Statistic)bf.Deserialize(fs_users);
                     yy = (int)bf.Deserialize(fs_users);
                     mm = (int)bf.Deserialize(fs_users);
                     dd = (int)bf.Deserialize(fs_users);
-                    users.Add(new User(login, password, new DateOnly(yy, mm, dd), stats));
+                    users.Add(new User(login, password, new DateOnly(yy, mm, dd)));
                 }
             }
             catch (Exception)
@@ -1198,7 +1219,6 @@ namespace Quiz
             BinaryFormatter bf = new();
             bf.Serialize(fs, user.Login);
             bf.Serialize(fs, user.Password);
-            bf.Serialize(fs, user.Stats);
             bf.Serialize(fs, user.BirthDate.Year);
             bf.Serialize(fs, user.BirthDate.Month);
             bf.Serialize(fs, user.BirthDate.Day);
@@ -1212,7 +1232,6 @@ namespace Quiz
             {
                 bf.Serialize(fs, user.Login);
                 bf.Serialize(fs, user.Password);
-                bf.Serialize(fs, user.Stats);
                 bf.Serialize(fs, user.BirthDate.Year);
                 bf.Serialize(fs, user.BirthDate.Month);
                 bf.Serialize(fs, user.BirthDate.Day);

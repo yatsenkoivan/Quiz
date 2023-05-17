@@ -348,11 +348,11 @@ namespace Quiz
             do
             {
                 EnterValue(out input, res.Length*4);
-                input = input.Replace('.', ' ');
-                string[] arr = input.Split(' ');
+                input = input.Replace(' ', '.').Replace('/', '.');
+                string[] arr = input.Split('.');
                 foreach (string inp in arr)
                 {
-                    int.TryParse(inp, out temp);
+                    if (int.TryParse(inp, out temp) == false) continue;
                     res = res.Append(temp).ToArray();
                 }
             } while (res.Length < 3);
@@ -735,7 +735,7 @@ namespace Quiz
                             }
                             else
                             {
-                                List<Answer>? answers = AddQuestionAnswers(amount);
+                                List<Answer>? answers = AddQuestionAnswers(amount, text);
                                 if (answers == null) break;
                                 Question q = new(text, answers);
                                 data.LessonInfo[lesson].AddQuestion(q);
@@ -753,7 +753,7 @@ namespace Quiz
                 }
             } while (move != msg.Length - 1);
         }
-        public List<Answer>? AddQuestionAnswers(int answers_amount)
+        public List<Answer>? AddQuestionAnswers(int answers_amount, string question)
         {
             Console.Clear();
             string[] msg = new string[answers_amount * 2 + 2];
@@ -768,7 +768,7 @@ namespace Quiz
             msg[submit_level] = "Submit";
             msg[back_level] = "Back";
 
-            string title = "Enter answers";
+            string title = "Enter answers: " + question;
             Show(title, msg);
 
             string[] answers_text = new string[answers_amount];
@@ -802,7 +802,7 @@ namespace Quiz
                     {
                         if (move%2 == 0) //Text
                         {
-                            EnterValue(out answers_text[move / 2], move / 2);
+                            EnterValue(out answers_text[move / 2]);
                         }
                         else //IsTrue
                         {
@@ -831,11 +831,6 @@ namespace Quiz
             if (current_user == null) return;
             Console.Clear();
 
-            //ShowValue("No data.", 0);
-            //ShowValue("Press any key to continue ...", 2);
-            //Console.ReadKey(true);
-
-            //Console.WriteLine(" -------- \tAVG\tBEST\tGAMES");
             bool flag = true;
             foreach(LessonInfo l in data.LessonInfo)
             {
@@ -1147,7 +1142,7 @@ namespace Quiz
             if (stats.ContainsKey(name))
             {
                 stats[name].Best = Math.Max(stats[name].Best, result);
-                stats[name].AVG = (stats[name].AVG * stats[name].Games + result) / (stats[name].Games);
+                stats[name].AVG = (stats[name].AVG * stats[name].Games + result) / (stats[name].Games+1);
                 stats[name].Games++;
             }
             else

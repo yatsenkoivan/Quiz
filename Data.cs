@@ -74,20 +74,20 @@ namespace Quiz
         {
             get { return current_user; }
         }
-        static private void Show(string title, string[] msg, int cursor_y=0)
+        static private void Show(string title, string[] msg, int cursor_y = 0)
         {
             Console.SetCursorPosition(Cursor.Cursor.offset_x - 2, Cursor.Cursor.offset_y - 2);
             Console.WriteLine(title);
             Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, Cursor.Cursor.offset_y);
             int current = Console.GetCursorPosition().Top;
 
-            foreach(string m in msg)
+            foreach (string m in msg)
             {
                 Console.Write(m);
                 current++;
                 Console.SetCursorPosition(Cursor.Cursor.offset_x + Cursor.Cursor.dif, current);
             }
-            Console.SetCursorPosition(Cursor.Cursor.offset_x, Cursor.Cursor.offset_y+cursor_y);
+            Console.SetCursorPosition(Cursor.Cursor.offset_x, Cursor.Cursor.offset_y + cursor_y);
             Cursor.Cursor.Show();
 
         }
@@ -114,7 +114,7 @@ namespace Quiz
             string title = "Menu";
             Show(title, msg);
 
-            int limit = msg.Length-1;
+            int limit = msg.Length - 1;
             int move;
             do
             {
@@ -214,7 +214,7 @@ namespace Quiz
                 "Back"
             };
             string title = "Register";
-            Show(title,msg);
+            Show(title, msg);
 
             string login = "";
             string password = "";
@@ -235,7 +235,7 @@ namespace Quiz
                             EnterValue(out login);
                             break;
                         case 1:
-                            EnterPassword(out password, hide : false);
+                            EnterPassword(out password, hide: false);
                             break;
                         case 2:
                             EnterDOB(out dd, out mm, out yy);
@@ -259,7 +259,7 @@ namespace Quiz
                                 MSG("! Login already taken !");
                                 Console.ReadKey(true);
                                 break;
-                            
+
                             }
                             DateOnly dob;
                             try
@@ -281,12 +281,12 @@ namespace Quiz
                             return;
                     }
                     Console.Clear();
-                    Show(title,msg,move);
+                    Show(title, msg, move);
                     ShowValue(login, 0);
                     ShowValue(password, 1);
                     ShowValue($"{dd}.{mm}.{yy}", 2);
                 }
-            } while (move != msg.Length-1);
+            } while (move != msg.Length - 1);
         }
         static public void EnterValue(out string value, int offset = 0)
         {
@@ -297,7 +297,7 @@ namespace Quiz
             value = Console.ReadLine() ?? "";
             Console.SetCursorPosition(x, y);
         }
-        static public void EnterValue(out int value, int offset=0)
+        static public void EnterValue(out int value, int offset = 0)
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x + tab_size + offset, y);
@@ -306,7 +306,7 @@ namespace Quiz
             int.TryParse(Console.ReadLine(), out value);
             Console.SetCursorPosition(x, y);
         }
-        static public string EnterPassword(out string pass, int offset=0, bool hide=true)
+        static public string EnterPassword(out string pass, int offset = 0, bool hide = true)
         {
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x + tab_size + offset, y);
@@ -347,7 +347,7 @@ namespace Quiz
             int temp;
             do
             {
-                EnterValue(out input, res.Length*4);
+                EnterValue(out input, res.Length * 4);
                 input = input.Replace(' ', '.').Replace('/', '.');
                 string[] arr = input.Split('.');
                 foreach (string inp in arr)
@@ -426,18 +426,22 @@ namespace Quiz
                 if (move != -1)
                 {
                     if (move == limit - 2 && current_user.Login == admin) return;
-                    if (move == limit-1 && current_user.Login == admin)
+                    if (move == limit - 1 && current_user.Login == admin)
                     {
                         AddQuiz();
-                        return;
+                        break;
                     }
                     if (move == limit)
                     {
                         if (current_user.Login == admin)
                         {
                             RemoveQuiz();
+                            break;
                         }
-                        return;
+                        else
+                        {
+                            return;
+                        }
                     }
                     LessonMenu(move);
                     Console.Clear();
@@ -496,7 +500,52 @@ namespace Quiz
         }
         public void RemoveQuiz()
         {
+            Console.Clear();
+            string[] msg = {
+                "Index: ",
+                "Submit",
+                "Back"
+            };
+            string title = "Edit question";
+            Show(title, msg);
 
+            int index = 0;
+
+            int limit = msg.Length - 1;
+            int move;
+
+            ShowValue(index, 0);
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                if (move != -1)
+                {
+                    switch (move)
+                    {
+                        case 0:
+                            EnterValue(out index);
+                            break;
+                        case 1:
+                            if (data.LessonInfo.Count <= index)
+                            {
+                                MSG("! Quiz not found !");
+                                Console.ReadKey(true);
+                                break;
+                            }
+                            else
+                            {
+                                data.LessonInfo.RemoveAt(index);
+                                data.WriteData();
+                                return;
+                            }
+                        case 2:
+                            return;
+                    }
+                    Console.Clear();
+                    Show(title, msg, move);
+                    ShowValue(index, 0);
+                }
+            } while (move != msg.Length - 1);
         }
         public void LessonMenu(int lesson)
         {
@@ -625,7 +674,7 @@ namespace Quiz
             data.WriteData();
             data.WriteUsers();
             ShowValue("Your result:", 0);
-            ShowValue($"{correct}/{ data.LessonInfo[lesson].Questions.Count}",1);
+            ShowValue($"{correct}/{data.LessonInfo[lesson].Questions.Count}", 1);
             ShowValue("Press any key to continue ...", 3);
             Console.ReadKey(true);
         }
@@ -666,7 +715,7 @@ namespace Quiz
                             AddQuestion(lesson);
                             break;
                         case 2:
-                            //EditQuestion(lesson);
+                            EditQuestion(lesson);
                             break;
                         case 3:
                             ClearLeaderboard(lesson);
@@ -735,7 +784,7 @@ namespace Quiz
                             }
                             else
                             {
-                                List<Answer>? answers = AddQuestionAnswers(amount, text);
+                                List<Answer>? answers = EditQuestionAnswers(amount, text);
                                 if (answers == null) break;
                                 Question q = new(text, answers);
                                 data.LessonInfo[lesson].AddQuestion(q);
@@ -753,7 +802,64 @@ namespace Quiz
                 }
             } while (move != msg.Length - 1);
         }
-        public List<Answer>? AddQuestionAnswers(int answers_amount, string question)
+        public void EditQuestion(int lesson)
+        {
+            if (lesson >= data.LessonInfo.Count) return;
+            Console.Clear();
+            string[] msg = {
+                "Index: ",
+                "Submit",
+                "Back"
+            };
+            string title = "Edit question";
+            Show(title, msg);
+
+            int index = 0;
+
+            int limit = msg.Length - 1;
+            int move;
+
+            ShowValue(index, 0);
+            do
+            {
+                move = Cursor.Cursor.Move(limit);
+                if (move != -1)
+                {
+                    switch (move)
+                    {
+                        case 0:
+                            EnterValue(out index);
+                            break;
+                        case 1:
+                            if (data.LessonInfo[lesson].Questions.Count <= index)
+                            {
+                                MSG("! Question not found !");
+                                Console.ReadKey(true);
+                                break;
+                            }
+                            else
+                            {
+                                List<Answer>? answers =
+                                EditQuestionAnswers(data.LessonInfo[lesson].Questions[index].Answers.Count,
+                                                    data.LessonInfo[lesson].Questions[index].Text,
+                                                    data.LessonInfo[lesson].Questions[index].Answers);
+                                if (answers != null)
+                                {
+                                    data.LessonInfo[lesson].Questions[index].Answers = answers;
+                                    data.WriteData();
+                                }
+                                return;
+                            }
+                        case 2:
+                            return;
+                    }
+                    Console.Clear();
+                    Show(title, msg, move);
+                    ShowValue(index, 0);
+                }
+            } while (move != msg.Length - 1);
+        }
+        public List<Answer>? EditQuestionAnswers(int answers_amount, string question, List<Answer>? answers = null)
         {
             Console.Clear();
             string[] msg = new string[answers_amount * 2 + 2];
@@ -771,8 +877,18 @@ namespace Quiz
             string title = "Enter answers: " + question;
             Show(title, msg);
 
-            string[] answers_text = new string[answers_amount];
-            bool[] answers_true = new bool[answers_amount];
+            string[] answers_text;
+            bool[] answers_true;
+            if (answers == null)
+            {
+                answers_text = new string[answers_amount];
+                answers_true = new bool[answers_amount];
+            }
+            else
+            {
+                answers_text = (from answer in answers select answer.Text).ToArray();
+                answers_true = (from answer in answers select answer.isTrue).ToArray();
+            }
 
             int limit = msg.Length - 1;
             int move;
@@ -1032,6 +1148,7 @@ namespace Quiz
         public List<Answer> Answers
         {
             get { return answers; }
+            set { answers = value; }
         }
         public Question(string text, List<Answer> answers)
         {

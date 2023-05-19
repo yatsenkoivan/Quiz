@@ -502,19 +502,20 @@ namespace Quiz
         {
             Console.Clear();
             string[] msg = {
-                "Index: ",
+                "Name: ",
                 "Submit",
                 "Back"
             };
-            string title = "Edit question";
+            string title = "Remove quiz";
             Show(title, msg);
 
-            int index = 0;
+            string name = "";
+            int index;
 
             int limit = msg.Length - 1;
             int move;
 
-            ShowValue(index, 0);
+            ShowValue(name, 0);
             do
             {
                 move = Cursor.Cursor.Move(limit);
@@ -523,10 +524,11 @@ namespace Quiz
                     switch (move)
                     {
                         case 0:
-                            EnterValue(out index);
+                            EnterValue(out name);
                             break;
                         case 1:
-                            if (data.LessonInfo.Count <= index)
+                            index = data.LessonInfo.FindIndex(l => l.Name == name);
+                            if (index == -1)
                             {
                                 MSG("! Quiz not found !");
                                 Console.ReadKey(true);
@@ -543,7 +545,7 @@ namespace Quiz
                     }
                     Console.Clear();
                     Show(title, msg, move);
-                    ShowValue(index, 0);
+                    ShowValue(name, 0);
                 }
             } while (move != msg.Length - 1);
         }
@@ -1245,9 +1247,12 @@ namespace Quiz
         }
         public void ShowQuestions()
         {
+            int index = 1;
             foreach (Question q in questions)
             {
+                Console.WriteLine($"{index})");
                 q.ShowInfo();
+                index++;
             }
         }
         public void AddQuestion(Question q)

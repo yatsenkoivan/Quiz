@@ -1,16 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading.Channels;
-using System.Xml;
-using System.Xml.Serialization;
+﻿using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Cursor
 {
@@ -171,28 +159,20 @@ namespace Quiz
                             hidden_pass = EnterPassword(out password);
                             break;
                         case 2:
-                            if (login == "")
+                            if (login == "") MSG("! Login cannot be empty !");
+                            else if (password == "") MSG("! Password cannot be empty !");
+                            else
                             {
-                                MSG("! Login cannot be empty !");
-                                Console.ReadKey(true);
-                                break;
+                                int index = data.Users.FindIndex(user => user.Login == login && user.Password == password);
+                                if (index == -1) MSG("! Login or password is incorrect !");
+                                else
+                                {
+                                    current_user = data.Users[index];
+                                    if (current_user != null) UserMenu();
+                                    return;
+                                }
                             }
-                            if (password == "")
-                            {
-                                MSG("! Password cannot be empty !");
-                                Console.ReadKey(true);
-                                break;
-                            }
-                            int index = data.Users.FindIndex(user => user.Login == login && user.Password == password);
-                            if (index == -1)
-                            {
-                                MSG("! Login or password is incorrect !");
-                                Console.ReadKey(true);
-                                break;
-                            }
-                            current_user = data.Users[index];
-                            if (current_user != null) UserMenu();
-                            return;
+                            break;
                         case 3:
                             return;
                     }
@@ -241,41 +221,31 @@ namespace Quiz
                             EnterDOB(out dd, out mm, out yy);
                             break;
                         case 3:
-                            if (login == "")
+                            if (login == "") MSG("! Login cannot be empty !");
+                            else if (password == "") MSG("! Password cannot be empty !");
+                            else
                             {
-                                MSG("! Login cannot be empty !");
-                                Console.ReadKey(true);
-                                break;
+                                int index = data.Users.FindIndex(user => user.Login == login);
+                                if (index != -1) MSG("! Login already taken !");
+                                else
+                                {
+                                    DateOnly dob;
+                                    try
+                                    {
+                                        dob = new(yy, mm, dd);
+                                    }
+                                    catch (Exception)
+                                    {
+                                        MSG("! Date is incorrect !");
+                                        break;
+                                    }
+                                    User user = new(login, password, dob);
+                                    data.AddUser(user);
+                                    MSG("  User registered.");
+                                    Console.ReadKey(true);
+                                    break;
+                                }
                             }
-                            if (password == "")
-                            {
-                                MSG("! Password cannot be empty !");
-                                Console.ReadKey(true);
-                                break;
-                            }
-                            int index = data.Users.FindIndex(user => user.Login == login);
-                            if (index != -1)
-                            {
-                                MSG("! Login already taken !");
-                                Console.ReadKey(true);
-                                break;
-
-                            }
-                            DateOnly dob;
-                            try
-                            {
-                                dob = new(yy, mm, dd);
-                            }
-                            catch (Exception)
-                            {
-                                MSG("! Date is incorrect !");
-                                Console.ReadKey(true);
-                                break;
-                            }
-                            User user = new(login, password, dob);
-                            data.AddUser(user);
-                            MSG("  User registered.");
-                            Console.ReadKey(true);
                             break;
                         case 4:
                             return;
@@ -477,18 +447,14 @@ namespace Quiz
                             EnterValue(out text);
                             break;
                         case 1:
-                            if (data.LessonInfo.Any(lesson => lesson.Name == text))
-                            {
-                                MSG("! Name is already taken !");
-                                Console.ReadKey(true);
-                                break;
-                            }
+                            if (data.LessonInfo.Any(lesson => lesson.Name == text)) MSG("! Name is already taken !");
                             else
                             {
                                 data.LessonInfo.Add(new LessonInfo(text));
                                 data.WriteData();
                                 return;
                             }
+                            break;
                         case 2:
                             return;
                     }
@@ -528,18 +494,14 @@ namespace Quiz
                             break;
                         case 1:
                             index = data.LessonInfo.FindIndex(l => l.Name == name);
-                            if (index == -1)
-                            {
-                                MSG("! Quiz not found !");
-                                Console.ReadKey(true);
-                                break;
-                            }
+                            if (index == -1) MSG("! Quiz not found !");
                             else
                             {
                                 data.LessonInfo.RemoveAt(index);
                                 data.WriteData();
                                 return;
                             }
+                            break;
                         case 2:
                             return;
                     }
@@ -776,14 +738,8 @@ namespace Quiz
                             EnterValue(out amount);
                             break;
                         case 2:
-                            if (amount <= 0)
-                            {
-                                MSG("! Amount of answers value is incorrect !");
-                            }
-                            else if (text == "")
-                            {
-                                MSG("! Text cannot be empty !");
-                            }
+                            if (amount <= 0) MSG("! Amount of answers value is incorrect !");
+                            else if (text == "") MSG("! Text cannot be empty !");
                             else
                             {
                                 List<Answer>? answers = EditQuestionAnswers(amount, text);
@@ -833,12 +789,7 @@ namespace Quiz
                             EnterValue(out index);
                             break;
                         case 1:
-                            if (data.LessonInfo[lesson].Questions.Count <= index)
-                            {
-                                MSG("! Question not found !");
-                                Console.ReadKey(true);
-                                break;
-                            }
+                            if (data.LessonInfo[lesson].Questions.Count <= index) MSG("! Question not found !");
                             else
                             {
                                 List<Answer>? answers =
@@ -852,6 +803,7 @@ namespace Quiz
                                 }
                                 return;
                             }
+                            break;
                         case 2:
                             return;
                     }
@@ -1012,7 +964,6 @@ namespace Quiz
                             if (password == "")
                             {
                                 MSG("! Password cannot be empty !");
-                                Console.ReadKey(true);
                                 break;
                             }
                             DateOnly dob;
@@ -1023,7 +974,6 @@ namespace Quiz
                             catch (Exception)
                             {
                                 MSG("! Date is incorrect !");
-                                Console.ReadKey(true);
                                 break;
                             }
                             User? newUser = current_user.Clone() as User;
@@ -1033,7 +983,6 @@ namespace Quiz
                                 newUser.SetDOB(new DateOnly(yy, mm, dd));
                                 data.UpdateUser(ref current_user, newUser);
                                 MSG("  Info saved.");
-                                Console.ReadKey(true);
                                 return;
                             }
                             break;
@@ -1052,6 +1001,7 @@ namespace Quiz
             (int x, int y) = Console.GetCursorPosition();
             Console.SetCursorPosition(x, y + error_level);
             Console.WriteLine(msg);
+            Console.ReadKey(true);
             Console.SetCursorPosition(x, y);
         }
 
@@ -1276,6 +1226,8 @@ namespace Quiz
     }
     class Data
     {
+        static private string user_data_path = "users.bin";
+        static private string data_path = "data.bin";
         private List<User> users;
         private List<LessonInfo> lessonInfo;
         public List<User> Users
@@ -1292,7 +1244,7 @@ namespace Quiz
 
             //USERS
             users = new List<User>();
-            FileStream fs_users = new("users.bin", FileMode.OpenOrCreate, FileAccess.Read);
+            FileStream fs_users = new(user_data_path, FileMode.OpenOrCreate, FileAccess.Read);
 
             string login;
             string password;
@@ -1315,7 +1267,7 @@ namespace Quiz
             fs_users.Close();
 
             //Lessons
-            FileStream fs_data = new("data.bin", FileMode.OpenOrCreate, FileAccess.Read);
+            FileStream fs_data = new(data_path, FileMode.OpenOrCreate, FileAccess.Read);
             try
             {
                 lessonInfo = ((List<LessonInfo>)bf.Deserialize(fs_data));
@@ -1328,11 +1280,11 @@ namespace Quiz
         }
         public void WriteUser(User user)
         {
-            if (File.Exists("users.bin") == false)
+            if (File.Exists(user_data_path) == false)
             {
-                File.Create("users.bin");
+                File.Create(user_data_path);
             }
-            FileStream fs = new("users.bin", FileMode.Append, FileAccess.Write);
+            FileStream fs = new(user_data_path, FileMode.Append, FileAccess.Write);
             BinaryFormatter bf = new();
             bf.Serialize(fs, user.Login);
             bf.Serialize(fs, user.Password);
@@ -1343,7 +1295,7 @@ namespace Quiz
         }
         public void WriteUsers()
         {
-            FileStream fs = new("users.bin", FileMode.OpenOrCreate, FileAccess.Write);
+            FileStream fs = new(user_data_path, FileMode.OpenOrCreate, FileAccess.Write);
             BinaryFormatter bf = new();
             foreach(User user in users)
             {
@@ -1357,7 +1309,7 @@ namespace Quiz
         }
         public void WriteData()
         {
-            FileStream fs = new("data.bin", FileMode.OpenOrCreate);
+            FileStream fs = new(data_path, FileMode.OpenOrCreate);
             BinaryFormatter bf = new();
             bf.Serialize(fs, lessonInfo);
             fs.Close();

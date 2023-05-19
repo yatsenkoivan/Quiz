@@ -340,7 +340,7 @@ namespace Quiz
             } while (key != (char)ConsoleKey.Enter);
             return result;
         }
-        public void EnterDOB(out int yy, out int mm, out int dd)
+        static public void EnterDOB(out int yy, out int mm, out int dd)
         {
             string input;
             int[] res = Array.Empty<int>();

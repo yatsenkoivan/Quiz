@@ -447,7 +447,8 @@ namespace Quiz
                             EnterValue(out text);
                             break;
                         case 1:
-                            if (data.LessonInfo.Any(lesson => lesson.Name == text)) MSG("! Name is already taken !");
+                            if (text == "") MSG("! Name cannot be empty !");
+                            else if (data.LessonInfo.Any(lesson => lesson.Name == text)) MSG("! Name is already taken !");
                             else
                             {
                                 data.LessonInfo.Add(new LessonInfo(text));
@@ -493,6 +494,11 @@ namespace Quiz
                             EnterValue(out name);
                             break;
                         case 1:
+                            if (name == "")
+                            {
+                                MSG("! Name cannot be empty !");
+                                break;
+                            }
                             index = data.LessonInfo.FindIndex(l => l.Name == name);
                             if (index == -1) MSG("! Quiz not found !");
                             else
